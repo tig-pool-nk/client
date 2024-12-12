@@ -19,4 +19,4 @@ pkill slave_tig
 
 wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/scripts/tig_pool_master.sh
 sudo chmod +x tig_pool_master.sh
-./tig_pool_master.sh -id_slave " . $slave_id . " -nom_slave " . $slave_name ." -ip ".$server_url . " -login " .$login . " -tok " .$private_key . " -url " .$server_url . " -v " .$client_version
+./tig_pool_master.sh -id_slave " . $slave_id . " -nom_slave " . $slave_name ." -ip ".$server_url . " -login " .$login . " -tok " .$private_key . " -url " .$server_url
