@@ -5,6 +5,7 @@ id_slave="@id@"
 login_discord="@login@"
 token_private="@tok@"
 machine_name="@worker@"
+version="@version@"
 
 # TIG Server
 ip="@ip@"
@@ -41,4 +42,4 @@ if [ ! -f "$worker_path" ]; then
 fi
 
 # If checks pass, execute the Python client
-#./"$client_file" --path_to_tig "$path_tig" --id_slave "$id_slave" --login_discord "$login_discord" --token_private "$token_private" --ip "$ip"  --port "$port" --add_tig "$add_tig" --url "$url"
+./"$client_file" --path_to_tig "$path_tig" --id_slave "$id_slave" --login_discord "$login_discord" --token_private "$token_private" --ip "$ip"  --port "$port" --add_tig "$add_tig" --url "$url" --version "$version"

@@ -7,7 +7,7 @@ usage() {
 }
 
 # Check if the total number of arguments is 14 (7 options + 7 values)
-if [ "$#" -ne 12 ]; then
+if [ "$#" -ne 14 ]; then
     usage
 fi
 
@@ -15,6 +15,7 @@ fi
 id_slave=""
 nom_slave=""
 ip=""
+v=""
 login_discord=""
 private_key=""
 URL_SERVER=""
@@ -32,6 +33,10 @@ while [[ "$#" -gt 0 ]]; do
             ;;
         -ip)
             ip="$2"
+            shift 2
+            ;;
+        -v)
+            v="$2"
             shift 2
             ;;
         -login)
@@ -140,6 +145,7 @@ sed -i "s|@tok@|$private_key|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
 sed -i "s|@worker@|$nom_slave|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
 sed -i "s|@ip@|$ip|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
 sed -i "s|@url@|http://$URL_SERVER|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
+sed -i "s|@version@|$v|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
 
 # Grant execution permissions to the launch file
 chmod +x pool_tig_launch_${id_slave}_${nom_slave}.sh
