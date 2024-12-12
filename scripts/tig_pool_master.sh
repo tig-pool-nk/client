@@ -109,7 +109,7 @@ cd tig-benchmarker
 wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/tig-benchmarker/slave.py -O slave.py
 wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/tig-benchmarker/requirements.txt -O requirements.txt
 cd $current_path
-./venv/bin/pip3 install -r requirements.txt
+./venv/bin/pip3 install -r tig-benchmarker/requirements.txt
 
 # Create a directory client_xnico_pool and navigate to it
 mkdir -p bin
