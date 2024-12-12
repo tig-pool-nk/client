@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ "$#" -ne 6 ]; then
+if [ "$#" -ne 5 ]; then
     exit 1
 fi
 
@@ -9,7 +9,6 @@ slave_name=$2
 server_url=$3
 login=$4
 private_key=$5
-client_version=$6
 
 \rm -rf tig_pool
 \mkdir tig_pool
