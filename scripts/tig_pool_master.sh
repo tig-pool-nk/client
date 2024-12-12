@@ -160,4 +160,4 @@ screen -dmS pool_tig bash -c "cd \"$current_path\" && ./pool_tig_launch_${id_sla
 
 sleep 5
 # Attach to the screen
-screen -r pool_tig
+screen -d -r pool_tig
