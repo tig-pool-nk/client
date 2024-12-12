@@ -157,6 +157,30 @@ echo "Script completed successfully. Files have been downloaded, configured, and
 # Start a new screen called pool_tig and execute the script pool_tig_launch_${id_slave}_${nom_slave}.sh
 screen -dmS pool_tig bash -c "cd \"$current_path\" && ./pool_tig_launch_${id_slave}_${nom_slave}.sh ; exec bash"
 
-sleep 5
-# Attach to the screen
-screen -d -r pool_tig
+
+set +H
+
+echo -e "\e[32m"
+echo "████████╗██╗  ██████╗     ██████╗  ██████╗  ██████╗ ██╗     "
+echo "╚══██╔══╝██║ ██╔════╝     ██╔══██╗██╔═══██╗██╔═══██╗██║     "
+echo "   ██║   ██║ ██║  ███╗    ██████╔╝██║   ██║██║   ██║██║     "
+echo "   ██║   ██║ ██║   ██║    ██╔═══╝ ██║   ██║██║   ██║██║     "
+echo "   ██║   ██║ ╚██████╔╝    ██║     ╚██████╔╝╚██████╔╝███████╗"
+echo "   ╚═╝   ╚═╝  ╚═════╝     ╚═╝      ╚═════╝  ╚═════╝ ╚══════╝"
+echo -e "\e[0m"
+
+echo ""
+echo -e "\e[32mTIG Pool has been installed successfully!\e[0m"
+echo ""
+
+echo "To follow the benchmarker, use the commands below:"
+echo
+echo "  1. Attach to the pool:"
+echo "     screen -r pool_tig"
+echo
+echo "  2. Attach to the slave:"
+echo "     screen -r slave_tig"
+echo
+echo -e "\e[33mGood mining and happy benchmarking!\e[0m"
+
+set -H
