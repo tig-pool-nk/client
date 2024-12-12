@@ -155,7 +155,7 @@ sed -i "s|@@path@@|$current_path/|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
 echo "Script completed successfully. Files have been downloaded, configured, and the path has been updated."
 
 # Start a new screen called pool_tig and execute the script pool_tig_launch_${id_slave}_${nom_slave}.sh
-screen -dmS pool_tig bash -c "cd \"$current_path\" && ./pool_tig_launch_${id_slave}_${nom_slave}.sh ; exec bash"
+screen -S pool_tig bash -c "cd \"$current_path\" && ./pool_tig_launch_${id_slave}_${nom_slave}.sh ; exec bash"
 
 
 set +H
@@ -175,10 +175,10 @@ echo ""
 
 echo "To follow the benchmarker, use the commands below:"
 echo
-echo "  1. Attach to the pool:"
+echo "  1. Follow pool:"
 echo "     screen -r pool_tig"
 echo
-echo "  2. Attach to the slave:"
+echo "  2. Follow slave:"
 echo "     screen -r slave_tig"
 echo
 echo -e "\e[33mGood mining and happy benchmarking!\e[0m"
