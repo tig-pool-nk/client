@@ -26,7 +26,7 @@ worker_path="$path_tig/tig-monorepo/target/release/tig-worker"
 
 # Check if the Python virtual environment exists
 if [ ! -d "$path_env" ]; then
-    echo "The virtual environment mon_env does not exist. Please create it before proceeding."
+    echo "The virtual environment venv does not exist. Please create it before proceeding."
     echo "To create it, run:"
     echo "python3 -m venv $path_env"
     exit 1
