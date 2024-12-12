@@ -15,7 +15,6 @@ fi
 id_slave=""
 nom_slave=""
 ip=""
-v=""
 login_discord=""
 private_key=""
 URL_SERVER=""
