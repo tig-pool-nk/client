@@ -103,13 +103,12 @@ cargo build -p tig-worker --release
 cd $current_path
 
 python3 -m venv venv
-source venv/bin/activate
 
 mkdir -p tig-benchmarker
 cd tig-benchmarker
 wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/tig-benchmarker/slave.py -O slave.py
 wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/tig-benchmarker/requirements.txt -O requirements.txt
-pip install -r requirements.txt
+./venv/bin/pip3 install -r requirements.txt
 
 # Create a directory client_xnico_pool and navigate to it
 cd $current_path
@@ -160,4 +159,4 @@ screen -dmS pool_tig bash -c "cd \"$current_path\" && ./pool_tig_launch_${id_sla
 
 sleep 5
 # Attach to the screen
-screen -r pool_tig
+screen -d -r pool_tig

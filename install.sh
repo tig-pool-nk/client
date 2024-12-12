@@ -16,8 +16,7 @@ client_version=$6
 \mkdir tig_pool
 cd tig_pool
 
-pkill pool_tig
-pkill slave_tig
+screen -ls | grep pool_tig | awk '{print $1}' | xargs -I {} screen -S {} -X kill
 
 wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/scripts/tig_pool_master.sh
 sudo chmod +x tig_pool_master.sh
