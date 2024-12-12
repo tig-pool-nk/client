@@ -15,7 +15,8 @@ client_version=$6
 \mkdir tig_pool
 cd tig_pool
 
-pkill -9 screen
+pkill pool_tig
+pkill slave_tig
 
 wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/scripts/tig_pool_master.sh
 sudo chmod +x tig_pool_master.sh
