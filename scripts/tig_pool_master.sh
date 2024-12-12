@@ -1,17 +1,17 @@
 #!/bin/bash
 
-# Fonction pour afficher l'usage
+# Function to display usage
 usage() {
-    echo "Usage: $0 -id_slave <id_slave> -nom_slave <nom_slave> -ip <ip> -v <version> -login <login_discord> -tok <private_key> -url <URL_SERVER>"
+    echo "Usage: $0 -id_slave <id_slave> -nom_slave <nom_slave> -ip <ip> -login <login_discord> -tok <private_key> -url <URL_SERVER>"
     exit 1
 }
 
-# Vérifier que le nombre total d'arguments est bien 14 (7 options + 7 valeurs)
-if [ "$#" -ne 14 ]; then
+# Check if the total number of arguments is 14 (7 options + 7 values)
+if [ "$#" -ne 13 ]; then
     usage
 fi
 
-# Initialiser les variables pour les paramètres
+# Initialize variables for parameters
 id_slave=""
 nom_slave=""
 ip=""
@@ -20,7 +20,7 @@ login_discord=""
 private_key=""
 URL_SERVER=""
 
-# Récupérer les arguments en entrée
+# Parse input arguments
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         -id_slave)
@@ -33,10 +33,6 @@ while [[ "$#" -gt 0 ]]; do
             ;;
         -ip)
             ip="$2"
-            shift 2
-            ;;
-        -v)
-            v="$2"
             shift 2
             ;;
         -login)
@@ -52,31 +48,33 @@ while [[ "$#" -gt 0 ]]; do
             shift 2
             ;;
         *)
-            echo "Paramètre inconnu : $1"
+            echo "Unknown parameter: $1"
             usage
             ;;
     esac
 done
 
-# Vérifier que les variables ne sont pas vides
-if [ -z "$id_slave" ] || [ -z "$nom_slave" ] || [ -z "$ip" ] || [ -z "$v" ] || [ -z "$login_discord" ] || [ -z "$private_key" ] || [ -z "$URL_SERVER" ]; then
+# Ensure variables are not empty
+if [ -z "$id_slave" ] || [ -z "$nom_slave" ] || [ -z "$ip" ] || [ -z "$login_discord" ] || [ -z "$private_key" ] || [ -z "$URL_SERVER" ]; then
     usage
 fi
 
-# Vérifier que screen est installé
+# Check if 'screen' is installed
 if ! command -v screen &> /dev/null; then
-    echo "Le programme 'screen' est nécessaire mais n'est pas installé. Installation..."
+    echo "The 'screen' program is required but not installed. Installing..."
     sudo apt install -y screen
 fi
 
-# Afficher les paramètres (ou exécuter une autre logique avec ces valeurs)
+current_path=$(pwd)
+
+# Display parameters (or execute other logic with these values)
 echo "ID Slave: $id_slave"
-echo "Nom Slave: $nom_slave"
+echo "Slave Name: $nom_slave"
 echo "IP: $ip"
-echo "VERSION: $v"
-echo "Login Discord: $login_discord"
+echo "Login: $login_discord"
 echo "Private Key: $private_key"
 echo "URL Server: $URL_SERVER"
+echo "Current path: $current_path"
 
 sudo apt update
 sudo apt install -y python3 python3-venv python3-dev
@@ -87,86 +85,74 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 source $HOME/.cargo/env
 sudo apt install -y libssl-dev
 
-# Créer le répertoire tig_pool_test et y naviguer
-mkdir -p "tig_pool_xnico_v$v"
-cd "tig_pool_xnico_v$v"
+# Create the directory tig_pool_test and navigate to it
 mkdir -p wasms
 sudo chmod -R 777 wasms/
-# Cloner le dépôt git avec la branche spécifiée
-git clone https://github.com/tig-pool-nk/tig-monorepo.git
+# Clone the Git repository with the specified branch
+git clone https://github.com/tig-foundation/tig-monorepo.git
 
-#curl -o "tig-monorepo/tig-benchmarker/slave.py" "http://tigpool.xyz/echange/slave.py"
-
-# Créer un environnement virtuel Python et l'activer
-python3 -m venv mon_env
-source mon_env/bin/activate
-
-# Naviguer vers le répertoire du benchmarker et construire le projet avec cargo
-cd tig-monorepo/tig-benchmarker/
+# Navigate to the benchmarker directory and build the project with cargo
+cd tig-monorepo/tig-worker/
 cargo build -p tig-worker --release
 
- 
+# Install the benchmarker
+cd $current_path
 
-# Installer les dépendances Python
+python3 -m venv venv
+source venv/bin/activate
+
+mkdir -p tig-benchmarker
+cd tig-benchmarker
+wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/tig-benchmarker/slave.py -O slave.py
+wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/tig-benchmarker/requirements.txt -O requirements.txt
 pip install -r requirements.txt
-pip install requests
 
-# Récupérer le chemin relatif actuel et le stocker dans une variable
-current_path=$(pwd)
-echo "Le chemin relatif est : $current_path"
+# Create a directory client_xnico_pool and navigate to it
+cd $current_path
+mkdir -p bin
+cd bin
 
-# Retourner au répertoire précédent
-cd ../..
-current_path=$(pwd)
-echo "Le chemin relatif est : $current_path"
-
-# Créer un répertoire client_xnico_pool_v1 et y naviguer
-mkdir -p client_xnico_pool
-cd client_xnico_pool
-
-# Télécharger les fichiers et vérifier le succès du téléchargement
-wget http://$ip/out/clients/v$v/client_v$v -O client_tig_pool_v$v
+# Download the files and check if the download was successful
+wget https://github.com/tig-pool-nk/client/raw/refs/heads/main/bin/client -O client_tig_pool
 if [ $? -ne 0 ]; then
-    echo "Erreur lors du téléchargement de client_tig_pool_v$v"
+    echo "Error downloading client_tig_pool"
     exit 1
 fi
 
-wget http://$ip/out/clients/v$v/bench_v$v -O bench_v$v
+wget https://github.com/tig-pool-nk/client/raw/refs/heads/main/bin/bench -O bench
 if [ $? -ne 0 ]; then
-    echo "Erreur lors du téléchargement de bench"
+    echo "Error downloading bench"
     exit 1
 fi
 
-# Donner les permissions d'exécution aux deux fichiers
-chmod +x client_tig_pool_v$v
-chmod +x bench_v$v
+# Grant execution permissions to both files
+chmod +x client_tig_pool
+chmod +x bench
 
-# Revenir dans le répertoire parent
-cd ..
+cd $current_path
 
-# Télécharger le fichier de lancement et le renommer en fonction des paramètres fournis
-wget -O pool_tig_launch_${id_slave}_${nom_slave}.sh http://$ip/out/master/pool_tig_launch_master.sh
+# Download the launch file and rename it according to the provided parameters
+wget -O pool_tig_launch_${id_slave}_${nom_slave}.sh https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/scripts/pool_tig_launch_master.sh
 
-# Remplacer les placeholders par les valeurs des variables
+# Replace placeholders with variable values
 sed -i "s|@id@|$id_slave|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
 sed -i "s|@login@|$login_discord|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
 sed -i "s|@tok@|$private_key|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
 sed -i "s|@worker@|$nom_slave|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
 sed -i "s|@ip@|$ip|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
 sed -i "s|@url@|http://$URL_SERVER|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
-sed -i "s|@v@|$v|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
 
-# Donner les permissions d'exécution au fichier de lancement
+# Grant execution permissions to the launch file
 chmod +x pool_tig_launch_${id_slave}_${nom_slave}.sh
 
-# Remplacer @@path@@ par le chemin actuel dans le fichier de lancement
+# Replace @@path@@ with the current path in the launch file
 sed -i "s|@@path@@|$current_path/|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
 
-echo "Script terminé avec succès. Les fichiers ont été téléchargés, configurés et le chemin a été mis à jour."
+echo "Script completed successfully. Files have been downloaded, configured, and the path has been updated."
 
-# Lancer un nouveau screen appelé pool_tig et exécuter le script pool_tig_launch_${id_slave}_${nom_slave}.sh
+# Start a new screen called pool_tig and execute the script pool_tig_launch_${id_slave}_${nom_slave}.sh
 screen -dmS pool_tig bash -c "cd \"$current_path\" && ./pool_tig_launch_${id_slave}_${nom_slave}.sh ; exec bash"
 
 sleep 5
-# Aller dans le screen
+# Attach to the screen
 screen -r pool_tig
