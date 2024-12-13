@@ -2,12 +2,12 @@
 
 # Function to display usage
 usage() {
-    echo "Usage: $0 -id_slave <id_slave> -nom_slave <nom_slave> -ip <ip> -login <login_discord> -tok <private_key> -url <URL_SERVER>"
+    echo "Usage: $0 -id_slave <id_slave> -nom_slave <nom_slave> -ip <ip> -port <port> -login <login_discord> -tok <private_key> -url <URL_SERVER>"
     exit 1
 }
 
-# Check if the total number of arguments is 14 (7 options + 7 values)
-if [ "$#" -ne 14 ]; then
+# Check if the total number of arguments ok
+if [ "$#" -ne 16 ]; then
     usage
 fi
 
@@ -15,6 +15,7 @@ fi
 id_slave=""
 nom_slave=""
 ip=""
+port=""
 v=""
 login_discord=""
 private_key=""
@@ -33,6 +34,10 @@ while [[ "$#" -gt 0 ]]; do
             ;;
         -ip)
             ip="$2"
+            shift 2
+            ;;
+        -port)
+            port="$2"
             shift 2
             ;;
         -v)
@@ -59,7 +64,7 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 # Ensure variables are not empty
-if [ -z "$id_slave" ] || [ -z "$nom_slave" ] || [ -z "$ip" ] || [ -z "$login_discord" ] || [ -z "$private_key" ] || [ -z "$URL_SERVER" ]; then
+if [ -z "$id_slave" ] || [ -z "$nom_slave" ] || [ -z "$ip" ] || [ -z "$port" ] || [ -z "$login_discord" ] || [ -z "$private_key" ] || [ -z "$URL_SERVER" ]; then
     usage
 fi
 
@@ -75,6 +80,7 @@ current_path=$(pwd)
 echo "ID Slave: $id_slave"
 echo "Slave Name: $nom_slave"
 echo "IP: $ip"
+echo "Port: $port"
 echo "Login: $login_discord"
 echo "Private Key: $private_key"
 echo "URL Server: $URL_SERVER"
@@ -143,6 +149,7 @@ sed -i "s|@login@|$login_discord|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
 sed -i "s|@tok@|$private_key|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
 sed -i "s|@worker@|$nom_slave|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
 sed -i "s|@ip@|$ip|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
+sed -i "s|@port@|$port|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
 sed -i "s|@url@|http://$URL_SERVER|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
 sed -i "s|@version@|$v|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
 

@@ -9,7 +9,7 @@ version="@version@"
 
 # TIG Server
 ip="@ip@"
-port="6666"
+port="@port@"
 add_tig=""
 
 # WEB + port 
