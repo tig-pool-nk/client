@@ -99,7 +99,7 @@ sudo apt install -y libssl-dev
 mkdir -p wasms
 sudo chmod -R 777 wasms/
 # Clone the Git repository with the specified branch
-git clone https://github.com/tig-foundation/tig-monorepo.git
+git clone https://github.com/tig-pool-nk/tig-monorepo.git
 
 # Navigate to the benchmarker directory and build the project with cargo
 cd tig-monorepo/tig-worker/
@@ -111,14 +111,9 @@ cd $current_path
 python3 -m venv venv
 
 mkdir -p tig-benchmarker
-mkdir -p tig-benchmarker/common
 cd tig-benchmarker
 wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/tig-benchmarker/slave.py -O slave.py
 wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/tig-benchmarker/requirements.txt -O requirements.txt
-cd common
-wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/tig-benchmarker/merkle_tree.py -O merkle_tree.py
-wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/tig-benchmarker/structs.py -O structs.py
-wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/tig-benchmarker/utils.py -O utils.py
 cd $current_path
 ./venv/bin/pip3 install -r tig-benchmarker/requirements.txt
 
