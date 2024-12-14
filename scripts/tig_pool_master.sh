@@ -169,7 +169,7 @@ screen -dmS pool_tig bash -c "cd \"$current_path\" && ./pool_tig_launch_${id_sla
 cd $current_path
 mkdir game
 cd game
-wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/scripts/pool_tig_launch_master.sh -O snake.sh
+wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/scripts/snake.sh -O snake.sh
 cd $current_path
 
 set +H
