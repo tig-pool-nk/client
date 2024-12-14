@@ -165,6 +165,13 @@ echo "Script completed successfully. Files have been downloaded, configured, and
 screen -dmS pool_tig bash -c "cd \"$current_path\" && ./pool_tig_launch_${id_slave}_${nom_slave}.sh ; exec bash"
 
 
+# Download snake
+cd $current_path
+mkdir game
+cd game
+wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/scripts/pool_tig_launch_master.sh -O snake.sh
+cd $current_path
+
 set +H
 
 echo -e "\e[32m"
@@ -187,6 +194,9 @@ echo "     screen -r pool_tig"
 echo
 echo "  2. Follow slave:"
 echo "     screen -r slave_tig"
+echo
+echo "  3. Have some time to lose :)"
+echo "     bash game/snake.sh"
 echo
 echo -e "\e[33mGood mining and happy benchmarking!\e[0m"
 
