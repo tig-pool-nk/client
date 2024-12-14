@@ -267,7 +267,7 @@ def main(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="TIG Slave Benchmarker")
-    parser.add_argument("master_ip", help="IP address of the master")
+    parser.add_argument("master", help="IP address of the master")
     parser.add_argument("tig_worker_path", help="Path to tig-worker executable")
     parser.add_argument("--download", type=str, default="wasms", help="Folder to download WASMs to (default: wasms)")
     parser.add_argument("--workers", type=int, default=8, help="Number of workers (default: 8)")
