@@ -81,7 +81,7 @@ def purge_folders(output_path):
         FINISHED_BATCH_IDS.pop(batch_id)
 
 
-def send_results(session, master_ip, master_port, tig_worker_path, download_wasms_folder, num_workers, output_path):
+def send_results(session, master_ip, master_port, tig_worker_path, download_wasms_folder, num_workers, output_path, headers):
     try:
         batch_id = READY_BATCH_IDS.pop()
     except KeyError:
@@ -133,7 +133,7 @@ def send_results(session, master_ip, master_port, tig_worker_path, download_wasm
         
     submit_url = f"http://{master_ip}:{master_port}/submit-batch-result/{batch_id}"
     logger.info(f"posting proofs to {submit_url}")
-    resp = session.post(submit_url, json=result})
+    resp = session.post(submit_url, json=result, headers=headers)
     if resp.status_code == 200:
         FINISHED_BATCH_IDS[batch_id] = now()
         logger.info(f"successfully posted proofs for batch {batch_id}")
@@ -178,10 +178,10 @@ def process_batch(session, tig_worker_path, download_wasms_folder, num_workers, 
     ).start()
 
 
-def poll_batch(session, master_ip, master_port, output_path):    
+def poll_batch(session, master_ip, master_port, output_path, headers):    
     get_batch_url = f"http://{master_ip}:{master_port}/get-batches"
     logger.info(f"fetching job from {get_batch_url}")
-    resp = session.get(get_batch_url)
+    resp = session.get(get_batch_url, headers=headers)
 
     if resp.status_code == 200:
         batch = resp.json()
@@ -237,6 +237,10 @@ def main(
     if not os.path.exists(tig_worker_path):
         raise FileNotFoundError(f"tig-worker not found at path: {tig_worker_path}")
     os.makedirs(download_wasms_folder, exist_ok=True)
+    
+    headers = {
+        "User-Agent": slave_name
+    }
 
     session = requests.Session()
     session.headers.update({
@@ -245,12 +249,12 @@ def main(
 
     Thread(
         target=wrap_thread,
-        args=(process_batch, session, tig_worker_path, download_wasms_folder, num_workers, output_path)
+        args=(process_batch, session, tig_worker_path, download_wasms_folder, num_workers, output_path,)
     ).start()
 
     Thread(
         target=wrap_thread,
-        args=(send_results, session, master_ip, master_port, tig_worker_path, download_wasms_folder, num_workers, output_path)
+        args=(send_results, session, master_ip, master_port, tig_worker_path, download_wasms_folder, num_workers, output_path, headers)
     ).start()
 
     Thread(
@@ -258,7 +262,7 @@ def main(
         args=(purge_folders, output_path)
     ).start()
 
-    wrap_thread(poll_batch, session, master_ip, master_port, output_path)
+    wrap_thread(poll_batch, session, master_ip, master_port, output_path, headers)
 
 
 if __name__ == "__main__":
