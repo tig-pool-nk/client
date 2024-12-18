@@ -302,7 +302,7 @@ if __name__ == "__main__":
     parser.add_argument("--verbose", action='store_true', help="Print debug logs")
     parser.add_argument("--output", type=str, default="results", help="Folder to output results to (default: results)")
     parser.add_argument("--ttl", type=int, default=300, help="(Time To Live) Seconds to retain results (default: 300)")
-    parser.add_argument("--mode", type=str, default=main, help="mainnet/explo")
+    parser.add_argument("--mode", type=str, default="mainnet", help="mainnet/explo")
     
     args = parser.parse_args()
     
