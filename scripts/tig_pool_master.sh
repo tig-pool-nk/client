@@ -118,9 +118,11 @@ cd tig-benchmarker
 wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/test/tig-benchmarker/slave.py -O slave.py
 wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/test/tig-benchmarker/requirements.txt -O requirements.txt
 mkdir -p common
+cd common
 wget https://raw.githubusercontent.com/tig-pool-nk/tig-monorepo/refs/heads/test/tig-benchmarker/common/__init__.py -O __init__.py
 wget https://raw.githubusercontent.com/tig-pool-nk/tig-monorepo/refs/heads/test/tig-benchmarker/common/merkle_tree.py -O merkle_tree.py
 wget https://raw.githubusercontent.com/tig-pool-nk/tig-monorepo/refs/heads/test/tig-benchmarker/common/structs.py  -O structs.py
+wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/test/tig-benchmarker/common/utils.py -O utils.py
 
 
 
