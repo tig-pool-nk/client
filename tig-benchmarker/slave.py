@@ -250,11 +250,6 @@ def main(
 
     Thread(
         target=wrap_thread,
-        args=(process_batch, session, tig_worker_path, download_wasms_folder, num_workers, output_path)
-    ).start()
-
-    Thread(
-        target=wrap_thread,
         args=(send_results, session, master_ip, master_port, tig_worker_path, download_wasms_folder, num_workers, output_path)
     ).start()
 
@@ -263,8 +258,13 @@ def main(
         args=(purge_folders, output_path, ttl)
     ).start()
 
-    wrap_thread(poll_batches, session, master_ip, master_port, output_path)
-
+    while True:
+        try:
+            poll_batches(session, master_ip, master_port, output_path)
+            process_batch(session, tig_worker_path, download_wasms_folder, num_workers, output_path)
+        except Exception as e:
+            logger.error(f"Error in main loop: {e}")
+            time.sleep(5)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="TIG Slave Benchmarker")
@@ -277,9 +277,7 @@ if __name__ == "__main__":
     parser.add_argument("--verbose", action='store_true', help="Print debug logs")
     parser.add_argument("--output", type=str, default="results", help="Folder to output results to (default: results)")
     parser.add_argument("--ttl", type=int, default=300, help="(Time To Live) Seconds to retain results (default: 300)")
-    
     args = parser.parse_args()
-    
     logging.basicConfig(
         format='%(levelname)s - [%(name)s] - %(message)s',
         level=logging.DEBUG if args.verbose else logging.INFO
