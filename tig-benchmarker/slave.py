@@ -1,7 +1,3 @@
-coucocu
-sdfsdfsdfsdf
-
-
 import argparse
 import json
 import os
