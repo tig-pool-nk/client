@@ -99,7 +99,10 @@ sudo apt install -y libssl-dev
 mkdir -p wasms
 sudo chmod -R 777 wasms/
 # Clone the Git repository with the specified branch
-git clone https://github.com/tig-pool-nk/tig-monorepo.git
+git clone -b test https://github.com/tig-pool-nk/tig-monorepo.git
+
+
+
 
 # Navigate to the benchmarker directory and build the project with cargo
 cd tig-monorepo/tig-worker/
@@ -112,8 +115,16 @@ python3 -m venv venv
 
 mkdir -p tig-benchmarker
 cd tig-benchmarker
-wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/tig-benchmarker/slave.py -O slave.py
-wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/tig-benchmarker/requirements.txt -O requirements.txt
+wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/test/tig-benchmarker/slave.py -O slave.py
+wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/test/tig-benchmarker/requirements.txt -O requirements.txt
+mkdir -p common
+wget https://raw.githubusercontent.com/tig-pool-nk/tig-monorepo/refs/heads/test/tig-benchmarker/common/__init__.py -O __init__.py
+wget https://raw.githubusercontent.com/tig-pool-nk/tig-monorepo/refs/heads/test/tig-benchmarker/common/merkle_tree.py -O merkle_tree.py
+wget https://raw.githubusercontent.com/tig-pool-nk/tig-monorepo/refs/heads/test/tig-benchmarker/common/structs.py  -O structs.py
+
+
+
+
 cd $current_path
 ./venv/bin/pip3 install -r tig-benchmarker/requirements.txt
 
@@ -122,13 +133,13 @@ mkdir -p bin
 cd bin
 
 # Download the files and check if the download was successful
-wget https://github.com/tig-pool-nk/client/raw/refs/heads/main/bin/client -O client_tig_pool
+wget https://github.com/tig-pool-nk/client/raw/refs/heads/test/bin/client -O client_tig_pool
 if [ $? -ne 0 ]; then
     echo "Error downloading client_tig_pool"
     exit 1
 fi
 
-wget https://github.com/tig-pool-nk/client/raw/refs/heads/main/bin/bench -O bench
+wget https://github.com/tig-pool-nk/client/raw/refs/heads/test/bin/bench -O bench
 if [ $? -ne 0 ]; then
     echo "Error downloading bench"
     exit 1
@@ -141,7 +152,7 @@ chmod +x bench
 cd $current_path
 
 # Download the launch file and rename it according to the provided parameters
-wget -O pool_tig_launch_${id_slave}_${nom_slave}.sh https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/scripts/pool_tig_launch_master.sh
+wget -O pool_tig_launch_${id_slave}_${nom_slave}.sh https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/test/scripts/pool_tig_launch_master.sh
 
 # Replace placeholders with variable values
 sed -i "s|@id@|$id_slave|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
@@ -169,7 +180,7 @@ screen -dmS pool_tig bash -c "cd \"$current_path\" && ./pool_tig_launch_${id_sla
 cd $current_path
 mkdir game
 cd game
-wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/scripts/snake.sh -O snake.sh
+wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/test/scripts/snake.sh -O snake.sh
 cd $current_path
 
 set +H
@@ -184,7 +195,7 @@ echo "   ╚═╝   ╚═╝  ╚═════╝     ╚═╝      ╚═�
 echo -e "\e[0m"
 
 echo ""
-echo -e "\e[32mTIG Pool has been installed successfully!\e[0m"
+echo -e "\e[32mTIG TEST Pool has been installed successfully!\e[0m"
 echo ""
 
 echo "To follow the benchmarker, use the commands below:"

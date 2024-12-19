@@ -13,12 +13,12 @@ login=$5
 private_key=$6
 client_version=$7
 
-\rm -rf tig_pool
-\mkdir tig_pool
-cd tig_pool
+\rm -rf tig_pool_test
+\mkdir tig_pool_test
+cd tig_pool_test
 
 screen -ls | grep pool_tig | awk '{print $1}' | xargs -I {} screen -S {} -X kill
 
-wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/scripts/tig_pool_master.sh
+wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/test/scripts/tig_pool_master.sh
 sudo chmod +x tig_pool_master.sh
 ./tig_pool_master.sh -id_slave $slave_id -nom_slave $slave_name -ip $server_url -port $port -login $login -tok $private_key -url $server_url -v $client_version
