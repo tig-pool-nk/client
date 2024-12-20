@@ -103,6 +103,8 @@ sudo apt install -y libssl-dev
 
 # Create the directory tig_pool_test and navigate to it
 mkdir -p wasms
+mkdir -p logs
+sudo chmod -R 777 logs/
 sudo chmod -R 777 wasms/
 # Clone the Git repository with the specified branch
 git clone -b $branch https://github.com/tig-pool-nk/tig-monorepo.git
@@ -189,14 +191,16 @@ sed -i "s|@@path@@|$current_path/|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
 echo "Script completed successfully. Files have been downloaded, configured, and the path has been updated."
 
 # Start a new screen called pool_tig and execute the script pool_tig_launch_${id_slave}_${nom_slave}.sh
-screen -dmS pool_tig bash -c "cd \"$current_path\" && ./pool_tig_launch_${id_slave}_${nom_slave}.sh ; exec bash"
+#screen -dmS pool_tig bash -c "cd \"$current_path\" && ./pool_tig_launch_${id_slave}_${nom_slave}.sh ; exec bash"
+screen -dmL -Logfile "$current_path/logs/pool_tig.log" -S pool_tig bash -c "cd \"$current_path\" && ./pool_tig_launch_${id_slave}_${nom_slave}.sh ; exec bash"
+
 
 
 # Download snake
 cd $current_path
 mkdir game
 cd game
-wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/test/scripts/snake.sh -O snake.sh
+wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/scripts/snake.sh -O snake.sh
 cd $current_path
 
 set +H
