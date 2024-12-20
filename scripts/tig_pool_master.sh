@@ -2,7 +2,7 @@
 
 # Function to display usage
 usage() {
-    echo "Usage: $0 -id_slave <id_slave> -nom_slave <nom_slave> -ip <ip> -port <port> -login <login_discord> -tok <private_key> -url <URL_SERVER>"
+    echo "Usage: $0 -id_slave <id_slave> -nom_slave <nom_slave> -ip <ip> -port <port> -login <login_discord> -tok <private_key> -url <URL_SERVER> -b <branch>"
     exit 1
 }
 
