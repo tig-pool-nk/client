@@ -7,7 +7,7 @@ usage() {
 }
 
 # Check if the total number of arguments ok
-if [ "$#" -ne 17 ]; then
+if [ "$#" -ne 18 ]; then
     usage
 fi
 
