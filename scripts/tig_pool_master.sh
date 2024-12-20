@@ -20,6 +20,7 @@ v=""
 login_discord=""
 private_key=""
 URL_SERVER=""
+branch=""
 
 # Parse input arguments
 while [[ "$#" -gt 0 ]]; do
