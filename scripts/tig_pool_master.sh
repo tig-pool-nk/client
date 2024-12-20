@@ -56,6 +56,10 @@ while [[ "$#" -gt 0 ]]; do
             URL_SERVER="$2"
             shift 2
             ;;
+        -b)
+            branch="$2"
+            shift 2
+            ;;
         *)
             echo "Unknown parameter: $1"
             usage
@@ -64,7 +68,7 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 # Ensure variables are not empty
-if [ -z "$id_slave" ] || [ -z "$nom_slave" ] || [ -z "$ip" ] || [ -z "$port" ] || [ -z "$login_discord" ] || [ -z "$private_key" ] || [ -z "$URL_SERVER" ]; then
+if [ -z "$id_slave" ] || [ -z "$nom_slave" ] || [ -z "$ip" ] || [ -z "$port" ] || [ -z "$login_discord" ] || [ -z "$private_key" ] || [ -z "$URL_SERVER" ]|| [ -b "$branch" ]; then
     usage
 fi
 
@@ -85,6 +89,7 @@ echo "Login: $login_discord"
 echo "Private Key: $private_key"
 echo "URL Server: $URL_SERVER"
 echo "Current path: $current_path"
+echo "Current branch: $b"
 
 sudo apt update
 sudo apt install -y python3 python3-venv python3-dev
@@ -99,7 +104,7 @@ sudo apt install -y libssl-dev
 mkdir -p wasms
 sudo chmod -R 777 wasms/
 # Clone the Git repository with the specified branch
-git clone -b test https://github.com/tig-pool-nk/tig-monorepo.git
+git clone -b $b https://github.com/tig-pool-nk/tig-monorepo.git
 
 
 
@@ -115,14 +120,14 @@ python3 -m venv venv
 
 mkdir -p tig-benchmarker
 cd tig-benchmarker
-wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/test/tig-benchmarker/slave.py -O slave.py
-wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/test/tig-benchmarker/requirements.txt -O requirements.txt
+wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$b/tig-benchmarker/slave.py -O slave.py
+wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$b/tig-benchmarker/requirements.txt -O requirements.txt
 mkdir -p common
 cd common
-wget https://raw.githubusercontent.com/tig-pool-nk/tig-monorepo/refs/heads/test/tig-benchmarker/common/__init__.py -O __init__.py
-wget https://raw.githubusercontent.com/tig-pool-nk/tig-monorepo/refs/heads/test/tig-benchmarker/common/merkle_tree.py -O merkle_tree.py
-wget https://raw.githubusercontent.com/tig-pool-nk/tig-monorepo/refs/heads/test/tig-benchmarker/common/structs.py  -O structs.py
-wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/test/tig-benchmarker/common/utils.py -O utils.py
+wget https://raw.githubusercontent.com/tig-pool-nk/tig-monorepo/refs/heads/$b/tig-benchmarker/common/__init__.py -O __init__.py
+wget https://raw.githubusercontent.com/tig-pool-nk/tig-monorepo/refs/heads/$b/tig-benchmarker/common/merkle_tree.py -O merkle_tree.py
+wget https://raw.githubusercontent.com/tig-pool-nk/tig-monorepo/refs/heads/$b/tig-benchmarker/common/structs.py  -O structs.py
+wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$b/tig-benchmarker/common/utils.py -O utils.py
 
 
 
@@ -135,21 +140,29 @@ mkdir -p bin
 cd bin
 
 # Download the files and check if the download was successful
-wget https://github.com/tig-pool-nk/client/raw/refs/heads/test/bin/client -O client_tig_pool
+wget https://github.com/tig-pool-nk/client/raw/refs/heads/$b/bin/client -O client_tig_pool
 if [ $? -ne 0 ]; then
     echo "Error downloading client_tig_pool"
     exit 1
 fi
 
-wget https://github.com/tig-pool-nk/client/raw/refs/heads/test/bin/bench -O bench
+wget https://github.com/tig-pool-nk/client/raw/refs/heads/$b/bin/bench -O bench
 if [ $? -ne 0 ]; then
     echo "Error downloading bench"
+    exit 1
+fi
+
+
+wget https://github.com/tig-pool-nk/client/raw/refs/heads/$b/bin/tig_idle -O tig_idle
+if [ $? -ne 0 ]; then
+    echo "Error downloading tig_idle"
     exit 1
 fi
 
 # Grant execution permissions to both files
 chmod +x client_tig_pool
 chmod +x bench
+chmod +x tig_idle
 
 cd $current_path
 
@@ -197,7 +210,7 @@ echo "   ╚═╝   ╚═╝  ╚═════╝     ╚═╝      ╚═�
 echo -e "\e[0m"
 
 echo ""
-echo -e "\e[32mTIG TEST Pool has been installed successfully!\e[0m"
+echo -e "\e[32mTIG $b Pool has been installed successfully!\e[0m"
 echo ""
 
 echo "To follow the benchmarker, use the commands below:"
