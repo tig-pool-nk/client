@@ -11,6 +11,7 @@ import zlib
 from threading import Thread
 from common.structs import OutputData, MerkleProof
 from common.merkle_tree import MerkleTree
+from datetime import datetime, timedelta
 
 logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
 PENDING_BATCH_IDS = set()
@@ -68,6 +69,13 @@ def run_tig_worker(tig_worker_path, batch, wasm_path, num_workers, output_path):
     
 
 def purge_folders(output_path, ttl):
+    cutoff_time = datetime.now() - timedelta(hours=2)
+    for folder in os.listdir(output_path):
+        folder_path = os.path.join(output_path, folder)
+        if os.path.isdir(folder_path) and datetime.fromtimestamp(os.path.getmtime(folder_path)) < cutoff_time:
+            logger.info(f"removing old folder: {folder_path}")
+            shutil.rmtree(folder_path)
+            
     n = now()
     purge_batch_ids = [
         batch_id
