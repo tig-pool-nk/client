@@ -69,7 +69,7 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 # Ensure variables are not empty
-if [ -z "$id_slave" ] || [ -z "$nom_slave" ] || [ -z "$ip" ] || [ -z "$port" ] || [ -z "$login_discord" ] || [ -z "$private_key" ] || [ -z "$URL_SERVER" ]|| [ -b "$branch" ]; then
+if [ -z "$id_slave" ] || [ -z "$nom_slave" ] || [ -z "$ip" ] || [ -z "$port" ] || [ -z "$login_discord" ] || [ -z "$private_key" ] || [ -z "$URL_SERVER" ]|| [ -z "$branch" ]; then
     usage
 fi
 
