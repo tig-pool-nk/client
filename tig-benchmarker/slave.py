@@ -246,6 +246,7 @@ def main(
     if not os.path.exists(tig_worker_path):
         raise FileNotFoundError(f"tig-worker not found at path: {tig_worker_path}")
     os.makedirs(download_wasms_folder, exist_ok=True)
+    os.makedirs(output_path, exist_ok=True)
 
     session = requests.Session()
     session.headers.update({
