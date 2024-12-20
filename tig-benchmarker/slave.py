@@ -123,11 +123,9 @@ def send_results(session, master_ip, master_port, tig_worker_path, download_wasm
         resp = session.post(submit_url, json=result)
         if resp.status_code == 200:
             FINISHED_BATCH_IDS[batch_id] = now()
-            purge_folders(output_path, 0)
             logger.info(f"successfully posted root for batch {batch_id}")
         elif resp.status_code == 408: # took too long 
             FINISHED_BATCH_IDS[batch_id] = now()
-            purge_folders(output_path, 0)
             logger.error(f"status {resp.status_code} when posting root for batch {batch_id} to master: {resp.text}")
         else:
             logger.error(f"status {resp.status_code} when posting root for batch {batch_id} to master: {resp.text}")
@@ -139,8 +137,6 @@ def send_results(session, master_ip, master_port, tig_worker_path, download_wasm
                 OutputData.from_dict(x) 
                 for x in json.loads(zlib.decompress(f.read()).decode())
             ]
-        with open(f"{output_folder}/result.json") as f:
-            result = json.load(f)
             
         merkle_tree = MerkleTree(
             [x.to_merkle_hash() for x in leafs],
@@ -155,21 +151,14 @@ def send_results(session, master_ip, master_port, tig_worker_path, download_wasm
             for n in batch["sampled_nonces"]
         ]
         
-        payload = {
-            "merkle_proofs": proofs_to_submit,
-            **result
-        }
-        
         submit_url = f"http://{master_ip}:{master_port}/submit-batch-proofs/{batch_id}"
         logger.info(f"posting proofs to {submit_url}")
-        resp = session.post(submit_url, json=payload)
+        resp = session.post(submit_url, json={"merkle_proofs": proofs_to_submit})
         if resp.status_code == 200:
             FINISHED_BATCH_IDS[batch_id] = now()
-            purge_folders(output_path, 0)
             logger.info(f"successfully posted proofs for batch {batch_id}")
         elif resp.status_code == 408: # took too long 
             FINISHED_BATCH_IDS[batch_id] = now()
-            purge_folders(output_path, 0)
             logger.error(f"status {resp.status_code} when posting proofs for batch {batch_id} to master: {resp.text}")
         else:
             logger.error(f"status {resp.status_code} when posting proofs for batch {batch_id} to master: {resp.text}")
