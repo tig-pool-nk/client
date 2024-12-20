@@ -100,11 +100,14 @@ def send_results(session, master_ip, master_port, tig_worker_path, download_wasm
         logger.debug("No pending batches")
         time.sleep(1)
         return
+
+    if FINISHED_BATCH_IDS[batch_id] is not None:
+        return;
     
     output_folder = f"{output_path}/{batch_id}"
     with open(f"{output_folder}/batch.json") as f:
         batch = json.load(f)
-
+        
     if (
         not os.path.exists(f"{output_folder}/result.json")
         or not os.path.exists(f"{output_folder}/data.zlib")
