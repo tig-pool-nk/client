@@ -131,6 +131,8 @@ def send_results(session, master_ip, master_port, tig_worker_path, download_wasm
                 OutputData.from_dict(x) 
                 for x in json.loads(zlib.decompress(f.read()).decode())
             ]
+        with open(f"{output_folder}/result.json") as f:
+            result = json.load(f)
             
         merkle_tree = MerkleTree(
             [x.to_merkle_hash() for x in leafs],
@@ -145,9 +147,14 @@ def send_results(session, master_ip, master_port, tig_worker_path, download_wasm
             for n in batch["sampled_nonces"]
         ]
         
+        payload = {
+            "merkle_proofs": proofs_to_submit,
+            **result
+        }
+        
         submit_url = f"http://{master_ip}:{master_port}/submit-batch-proofs/{batch_id}"
         logger.info(f"posting proofs to {submit_url}")
-        resp = session.post(submit_url, json={"merkle_proofs": proofs_to_submit})
+        resp = session.post(submit_url, json=payload)
         if resp.status_code == 200:
             FINISHED_BATCH_IDS[batch_id] = now()
             logger.info(f"successfully posted proofs for batch {batch_id}")
