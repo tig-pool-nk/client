@@ -2,12 +2,12 @@
 
 # Function to display usage
 usage() {
-    echo "Usage: $0 -id_slave <id_slave> -nom_slave <nom_slave> -ip <ip> -port <port> -login <login_discord> -tok <private_key> -url <URL_SERVER>"
+    echo "Usage: $0 -id_slave <id_slave> -nom_slave <nom_slave> -ip <ip> -port <port> -login <login_discord> -tok <private_key> -url <URL_SERVER> -b <branch>"
     exit 1
 }
 
 # Check if the total number of arguments ok
-if [ "$#" -ne 16 ]; then
+if [ "$#" -ne 18 ]; then
     usage
 fi
 
@@ -20,6 +20,7 @@ v=""
 login_discord=""
 private_key=""
 URL_SERVER=""
+branch=""
 
 # Parse input arguments
 while [[ "$#" -gt 0 ]]; do
@@ -56,6 +57,10 @@ while [[ "$#" -gt 0 ]]; do
             URL_SERVER="$2"
             shift 2
             ;;
+        -b)
+            branch="$2"
+            shift 2
+            ;;
         *)
             echo "Unknown parameter: $1"
             usage
@@ -64,7 +69,7 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 # Ensure variables are not empty
-if [ -z "$id_slave" ] || [ -z "$nom_slave" ] || [ -z "$ip" ] || [ -z "$port" ] || [ -z "$login_discord" ] || [ -z "$private_key" ] || [ -z "$URL_SERVER" ]; then
+if [ -z "$id_slave" ] || [ -z "$nom_slave" ] || [ -z "$ip" ] || [ -z "$port" ] || [ -z "$login_discord" ] || [ -z "$private_key" ] || [ -z "$URL_SERVER" ]|| [ -z "$branch" ]; then
     usage
 fi
 
@@ -85,6 +90,7 @@ echo "Login: $login_discord"
 echo "Private Key: $private_key"
 echo "URL Server: $URL_SERVER"
 echo "Current path: $current_path"
+echo "Current branch: $branch"
 
 sudo apt update
 sudo apt install -y python3 python3-venv python3-dev
@@ -97,9 +103,14 @@ sudo apt install -y libssl-dev
 
 # Create the directory tig_pool_test and navigate to it
 mkdir -p wasms
+mkdir -p logs
+sudo chmod -R 777 logs/
 sudo chmod -R 777 wasms/
 # Clone the Git repository with the specified branch
-git clone https://github.com/tig-pool-nk/tig-monorepo.git
+git clone -b $branch https://github.com/tig-pool-nk/tig-monorepo.git
+
+
+
 
 # Navigate to the benchmarker directory and build the project with cargo
 cd tig-monorepo/tig-worker/
@@ -112,8 +123,18 @@ python3 -m venv venv
 
 mkdir -p tig-benchmarker
 cd tig-benchmarker
-wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/tig-benchmarker/slave.py -O slave.py
-wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/tig-benchmarker/requirements.txt -O requirements.txt
+wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/tig-benchmarker/slave.py -O slave.py
+wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/tig-benchmarker/requirements.txt -O requirements.txt
+mkdir -p common
+cd common
+wget https://raw.githubusercontent.com/tig-pool-nk/tig-monorepo/refs/heads/$branch/tig-benchmarker/common/__init__.py -O __init__.py
+wget https://raw.githubusercontent.com/tig-pool-nk/tig-monorepo/refs/heads/$branch/tig-benchmarker/common/merkle_tree.py -O merkle_tree.py
+wget https://raw.githubusercontent.com/tig-pool-nk/tig-monorepo/refs/heads/$branch/tig-benchmarker/common/structs.py  -O structs.py
+wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/tig-benchmarker/common/utils.py -O utils.py
+
+
+
+
 cd $current_path
 ./venv/bin/pip3 install -r tig-benchmarker/requirements.txt
 
@@ -122,26 +143,34 @@ mkdir -p bin
 cd bin
 
 # Download the files and check if the download was successful
-wget https://github.com/tig-pool-nk/client/raw/refs/heads/main/bin/client -O client_tig_pool
+wget https://github.com/tig-pool-nk/client/raw/refs/heads/$branch/bin/client -O client_tig_pool
 if [ $? -ne 0 ]; then
     echo "Error downloading client_tig_pool"
     exit 1
 fi
 
-wget https://github.com/tig-pool-nk/client/raw/refs/heads/main/bin/bench -O bench
+wget https://github.com/tig-pool-nk/client/raw/refs/heads/$branch/bin/bench -O bench
 if [ $? -ne 0 ]; then
     echo "Error downloading bench"
+    exit 1
+fi
+
+
+wget https://github.com/tig-pool-nk/client/raw/refs/heads/$branch/bin/tig_idle -O tig_idle
+if [ $? -ne 0 ]; then
+    echo "Error downloading tig_idle"
     exit 1
 fi
 
 # Grant execution permissions to both files
 chmod +x client_tig_pool
 chmod +x bench
+chmod +x tig_idle
 
 cd $current_path
 
 # Download the launch file and rename it according to the provided parameters
-wget -O pool_tig_launch_${id_slave}_${nom_slave}.sh https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/scripts/pool_tig_launch_master.sh
+wget -O pool_tig_launch_${id_slave}_${nom_slave}.sh https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/test/scripts/pool_tig_launch_master.sh
 
 # Replace placeholders with variable values
 sed -i "s|@id@|$id_slave|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
@@ -162,14 +191,15 @@ sed -i "s|@@path@@|$current_path/|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
 echo "Script completed successfully. Files have been downloaded, configured, and the path has been updated."
 
 # Start a new screen called pool_tig and execute the script pool_tig_launch_${id_slave}_${nom_slave}.sh
-screen -dmS pool_tig bash -c "cd \"$current_path\" && ./pool_tig_launch_${id_slave}_${nom_slave}.sh ; exec bash"
+screen -dmL -Logfile "$current_path/logs/pool_tig.log" -S pool_tig bash -c "cd \"$current_path\" && ./pool_tig_launch_${id_slave}_${nom_slave}.sh ; exec bash"
+
 
 
 # Download snake
 cd $current_path
 mkdir game
 cd game
-wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/scripts/snake.sh -O snake.sh
+wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/scripts/snake.sh -O snake.sh
 cd $current_path
 
 set +H
@@ -184,16 +214,16 @@ echo "   ╚═╝   ╚═╝  ╚═════╝     ╚═╝      ╚═�
 echo -e "\e[0m"
 
 echo ""
-echo -e "\e[32mTIG Pool has been installed successfully!\e[0m"
+echo -e "\e[32mTIG $branch Pool has been installed successfully!\e[0m"
 echo ""
 
 echo "To follow the benchmarker, use the commands below:"
 echo
 echo "  1. Follow pool:"
-echo "     screen -r pool_tig"
-echo
+echo "     tail -f logs/pool_tig"
+echo        
 echo "  2. Follow slave:"
-echo "     screen -r slave_tig"
+echo "     tail -f logs/slave_tig"
 echo
 echo "  3. Have some time to lose :)"
 echo "     bash game/snake.sh"
