@@ -220,13 +220,13 @@ echo ""
 echo "To follow the benchmarker, use the commands below:"
 echo
 echo "  1. Follow pool:"
-echo "     tail -f logs/pool_tig"
+echo "     tail -f ~/tig_pool_main/logs/pool_tig.log"
 echo        
 echo "  2. Follow slave:"
-echo "     tail -f logs/slave_tig"
+echo "     tail -f ~/tig_pool_main/logs/slave_tig.log"
 echo
 echo "  3. Have some time to lose :)"
-echo "     bash game/snake.sh"
+echo "     bash ~/tig_pool_main/game/snake.sh"
 echo
 echo -e "\e[33mGood mining and happy benchmarking!\e[0m"
 
