@@ -123,14 +123,14 @@ python3 -m venv venv
 
 mkdir -p tig-benchmarker
 cd tig-benchmarker
-wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/tig-benchmarker/slave.py -O slave.py
-wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/tig-benchmarker/requirements.txt -O requirements.txt
+wget --no-cache https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/tig-benchmarker/slave.py -O slave.py
+wget --no-cache https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/tig-benchmarker/requirements.txt -O requirements.txt
 mkdir -p common
 cd common
-wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/tig-benchmarker/common/__init__.py -O __init__.py
-wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/tig-benchmarker/common/merkle_tree.py -O structs.py
-wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/tig-benchmarker/common/structs.py -O structs.py
-wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/tig-benchmarker/common/utils.py -O utils.py
+wget --no-cache https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/tig-benchmarker/common/__init__.py -O __init__.py
+wget --no-cache https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/tig-benchmarker/common/merkle_tree.py -O merkle_tree.py
+wget --no-cache https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/tig-benchmarker/common/structs.py -O structs.py
+wget --no-cache https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/tig-benchmarker/common/utils.py -O utils.py
 
 
 
@@ -143,20 +143,20 @@ mkdir -p bin
 cd bin
 
 # Download the files and check if the download was successful
-wget https://github.com/tig-pool-nk/client/raw/refs/heads/$branch/bin/client -O client_tig_pool
+wget --no-cache https://github.com/tig-pool-nk/client/raw/refs/heads/$branch/bin/client -O client_tig_pool
 if [ $? -ne 0 ]; then
     echo "Error downloading client_tig_pool"
     exit 1
 fi
 
-wget https://github.com/tig-pool-nk/client/raw/refs/heads/$branch/bin/bench -O bench
+wget --no-cache https://github.com/tig-pool-nk/client/raw/refs/heads/$branch/bin/bench -O bench
 if [ $? -ne 0 ]; then
     echo "Error downloading bench"
     exit 1
 fi
 
 
-wget https://github.com/tig-pool-nk/client/raw/refs/heads/$branch/bin/tig_idle -O tig_idle
+wget --no-cache https://github.com/tig-pool-nk/client/raw/refs/heads/$branch/bin/tig_idle -O tig_idle
 if [ $? -ne 0 ]; then
     echo "Error downloading tig_idle"
     exit 1
@@ -170,7 +170,7 @@ chmod +x tig_idle
 cd $current_path
 
 # Download the launch file and rename it according to the provided parameters
-wget -O pool_tig_launch_${id_slave}_${nom_slave}.sh https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/test/scripts/pool_tig_launch_master.sh
+wget --no-cache -O pool_tig_launch_${id_slave}_${nom_slave}.sh https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/test/scripts/pool_tig_launch_master.sh
 
 # Replace placeholders with variable values
 sed -i "s|@id@|$id_slave|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
@@ -199,7 +199,7 @@ screen -dmL -Logfile "$current_path/logs/pool_tig.log" -S pool_tig bash -c "cd \
 cd $current_path
 mkdir game
 cd game
-wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/scripts/snake.sh -O snake.sh
+wget --no-cache https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/scripts/snake.sh -O snake.sh
 cd $current_path
 
 set +H

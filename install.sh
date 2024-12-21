@@ -27,7 +27,7 @@ cd "tig_pool_$branch" || exit 1
 screen -ls | grep pool_tig | awk '{print $1}' | xargs -I {} screen -S {} -X kill
 
 # Download and run the updated script
-wget "https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/scripts/tig_pool_master.sh"
+wget --no-cache "https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/scripts/tig_pool_master.sh"
 sudo chmod +x tig_pool_master.sh
 
 ./tig_pool_master.sh \
