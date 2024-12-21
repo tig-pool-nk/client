@@ -221,10 +221,10 @@ echo ""
 echo "To follow the benchmarker, use the commands below:"
 echo
 echo "  1. Follow pool:"
-echo "     screen -r pool_tig"
-echo
+echo "     tail-f logs/pool_tig"
+echo        
 echo "  2. Follow slave:"
-echo "     screen -r slave_tig"
+echo "     tail-f logs/slave_tig"
 echo
 echo "  3. Have some time to lose :)"
 echo "     bash game/snake.sh"
