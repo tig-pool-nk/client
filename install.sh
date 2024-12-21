@@ -13,20 +13,9 @@ login=$5
 private_key=$6
 client_version=$7
 
-if [ "$#" -eq 7 ]; then
-    branch="main"
-else
-    mode=$8
-    if [ "$mode" = "testnet" ]; then
-        branch="test"
-
-    elif [ "$mode" = "mainnet" ]; then
-        branch="main"
-        
-    else
-        echo "Invalid mode: $mode"
-        exit 1
-    fi
+branch="main"
+if [ "$#" -eq 8 ] && [ "$mode" = "testnet" ]; then
+    branch="test"
 fi
 
 # Remove existing directory and recreate
