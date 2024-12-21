@@ -191,7 +191,6 @@ sed -i "s|@@path@@|$current_path/|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
 echo "Script completed successfully. Files have been downloaded, configured, and the path has been updated."
 
 # Start a new screen called pool_tig and execute the script pool_tig_launch_${id_slave}_${nom_slave}.sh
-#screen -dmS pool_tig bash -c "cd \"$current_path\" && ./pool_tig_launch_${id_slave}_${nom_slave}.sh ; exec bash"
 screen -dmL -Logfile "$current_path/logs/pool_tig.log" -S pool_tig bash -c "cd \"$current_path\" && ./pool_tig_launch_${id_slave}_${nom_slave}.sh ; exec bash"
 
 
