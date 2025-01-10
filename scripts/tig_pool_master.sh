@@ -13,10 +13,11 @@ fi
 
 
 # Check the number of processor threads
-cpu_threads=$(grep -c ^processor /proc/cpuinfo)
-if [ "$cpu_threads" -lt 24 ]; then
-    echo "Error: Your system has less than 24 threads ($cpu_threads detected). Installation aborted your not able to Mine on TIGPool."
-fi
+# cpu_threads=$(grep -c ^processor /proc/cpuinfo)
+# if [ "$cpu_threads" -lt 24 ]; then
+#     echo "Error: Your system has less than 24 threads ($cpu_threads detected). Installation aborted your not able to Mine on TIGPool."
+#     exit 1
+# fi
 
 
 # Initialize variables for parameters
