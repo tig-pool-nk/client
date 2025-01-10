@@ -124,20 +124,6 @@ cd $current_path
 
 python3 -m venv venv
 
-mkdir -p tig-benchmarker
-cd tig-benchmarker
-wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/tig-benchmarker/slave.py -O slave.py
-wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/tig-benchmarker/requirements.txt -O requirements.txt
-mkdir -p common
-cd common
-wget https://raw.githubusercontent.com/tig-pool-nk/tig-monorepo/refs/heads/$branch/tig-benchmarker/common/__init__.py -O __init__.py
-wget https://raw.githubusercontent.com/tig-pool-nk/tig-monorepo/refs/heads/$branch/tig-benchmarker/common/merkle_tree.py -O merkle_tree.py
-wget https://raw.githubusercontent.com/tig-pool-nk/tig-monorepo/refs/heads/$branch/tig-benchmarker/common/structs.py  -O structs.py
-wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/tig-benchmarker/common/utils.py -O utils.py
-
-
-
-
 cd $current_path
 ./venv/bin/pip3 install -r tig-benchmarker/requirements.txt
 
@@ -149,6 +135,12 @@ cd bin
 wget https://github.com/tig-pool-nk/client/raw/refs/heads/$branch/bin/client -O client_tig_pool
 if [ $? -ne 0 ]; then
     echo "Error downloading client_tig_pool"
+    exit 1
+fi
+
+wget https://github.com/tig-pool-nk/client/raw/refs/heads/$branch/bin/slave -O slave
+if [ $? -ne 0 ]; then
+    echo "Error downloading slave"
     exit 1
 fi
 
