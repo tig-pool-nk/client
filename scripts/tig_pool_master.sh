@@ -161,6 +161,7 @@ fi
 chmod +x client_tig_pool
 chmod +x bench
 chmod +x tig_idle
+chmod +x slave
 
 cd $current_path
 
