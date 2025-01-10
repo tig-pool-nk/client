@@ -13,8 +13,7 @@ login=$5
 private_key=$6
 client_version=$7
 
-branch="main"
-if [ "$#" -eq 8 ] && [ "$mode" = "testnet" ]; then
+if [ "$#" -eq 8 ] && [ "$8" = "testnet" ]; then
     branch="test"
 fi
 
