@@ -13,6 +13,9 @@ login=$5
 private_key=$6
 client_version=$7
 
+branch="main"
+
+# Vérifier si un 8ème argument est passé et correspond à "testnet"
 if [ "$#" -eq 8 ] && [ "$8" = "testnet" ]; then
     branch="test"
 fi
