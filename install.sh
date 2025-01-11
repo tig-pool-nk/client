@@ -48,7 +48,7 @@ screen -ls | grep pool_tig | awk '{print $1}' | xargs -I {} screen -S {} -X kill
 script_url="https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/scripts/tig_pool_master.sh"
 echo "Downloading script from: $script_url"
 
-wget "$script_url"
+wget --no-cache "$script_url"
 if [ $? -ne 0 ]; then
     echo "Error downloading script. Please check the branch and URL."
     exit 1

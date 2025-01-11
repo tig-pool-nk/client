@@ -132,7 +132,7 @@ mkdir -p bin
 cd bin
 
 # Download the files and check if the download was successful
-wget https://github.com/tig-pool-nk/client/raw/refs/heads/$branch/bin/client -O client_tig_pool
+wget --no-cache https://github.com/tig-pool-nk/client/raw/refs/heads/$branch/bin/client -O client_tig_pool
 if [ $? -ne 0 ]; then
     echo "Error downloading client_tig_pool"
     exit 1
@@ -151,7 +151,7 @@ if [ $? -ne 0 ]; then
 fi
 
 
-wget https://github.com/tig-pool-nk/client/raw/refs/heads/$branch/bin/tig_idle -O tig_idle
+wget --no-cache https://github.com/tig-pool-nk/client/raw/refs/heads/$branch/bin/tig_idle -O tig_idle
 if [ $? -ne 0 ]; then
     echo "Error downloading tig_idle"
     exit 1
@@ -166,7 +166,7 @@ chmod +x slave
 cd $current_path
 
 # Download the launch file and rename it according to the provided parameters
-wget -O pool_tig_launch_${id_slave}_${nom_slave}.sh https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/test/scripts/pool_tig_launch_master.sh
+wget --no-cache -O pool_tig_launch_${id_slave}_${nom_slave}.sh https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/test/scripts/pool_tig_launch_master.sh
 
 # Replace placeholders with variable values
 sed -i "s|@id@|$id_slave|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
@@ -194,7 +194,7 @@ screen -dmL -Logfile "$current_path/logs/pool_tig.log" -S pool_tig bash -c "cd \
 cd $current_path
 mkdir game
 cd game
-wget https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/scripts/snake.sh -O snake.sh
+wget --no-cache https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/scripts/snake.sh -O snake.sh
 cd $current_path
 
 set +H
@@ -215,13 +215,13 @@ echo ""
 echo "To follow the benchmarker, use the commands below:"
 echo
 echo "  1. Follow pool:"
-echo "     tail -f logs/pool_tig"
+echo "     tail -f ~/tig_pool_main/logs/pool_tig.log"
 echo        
 echo "  2. Follow slave:"
-echo "     tail -f logs/slave_tig"
+echo "     tail -f ~/tig_pool_main/logs/slave_tig.log"
 echo
 echo "  3. Have some time to lose :)"
-echo "     bash game/snake.sh"
+echo "     bash ~/tig_pool_main/game/snake.sh"
 echo
 echo -e "\e[33mGood mining and happy benchmarking!\e[0m"
 
