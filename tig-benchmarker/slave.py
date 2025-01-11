@@ -123,8 +123,8 @@ def send_results(session, master_ip, master_port, tig_worker_path, download_wasm
         with open(f"{output_folder}/result.json") as f:
             result = json.load(f)
 
-        submit_url = f"http://{master_ip}:{master_port}/submit-batch-root/{batch_id}"
-        logger.info(f"posting root to {submit_url}")
+        submit_url = f"https://{master_ip}/submit-batch-root/{batch_id}"
+        logger.info(f"posting root to master")
         resp = session.post(submit_url, json=result)
         if resp.status_code == 200:
             FINISHED_BATCH_IDS[batch_id] = now()
@@ -155,8 +155,8 @@ def send_results(session, master_ip, master_port, tig_worker_path, download_wasm
             for n in batch["sampled_nonces"]
         ]
         
-        submit_url = f"http://{master_ip}:{master_port}/submit-batch-proofs/{batch_id}"
-        logger.info(f"posting proofs to {submit_url}")
+        submit_url = f"https://{master_ip}/submit-batch-proofs/{batch_id}"
+        logger.info(f"posting proofs ")
         resp = session.post(submit_url, json={"merkle_proofs": proofs_to_submit})
         if resp.status_code == 200:
             FINISHED_BATCH_IDS[batch_id] = now()
@@ -197,8 +197,8 @@ def process_batch(session, tig_worker_path, download_wasms_folder, num_workers, 
 
 
 def poll_batches(session, master_ip, master_port, output_path):    
-    get_batches_url = f"http://{master_ip}:{master_port}/get-batches"
-    logger.info(f"fetching batches from {get_batches_url}")
+    get_batches_url = f"https://{master_ip}/get-batches"
+    logger.info(f"fetching batches ")
     resp = session.get(get_batches_url)
 
     if resp.status_code == 200:

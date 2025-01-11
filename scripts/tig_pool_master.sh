@@ -2,20 +2,28 @@
 
 # Function to display usage
 usage() {
-    echo "Usage: $0 -id_slave <id_slave> -nom_slave <nom_slave> -ip <ip> -port <port> -login <login_discord> -tok <private_key> -url <URL_SERVER> -b <branch>"
+    echo "Usage: $0 -id_slave <id_slave> -nom_slave <nom_slave> -ip <ip> -login <login_discord> -tok <private_key> -url <URL_SERVER> -b <branch>"
     exit 1
 }
 
 # Check if the total number of arguments ok
-if [ "$#" -ne 18 ]; then
+if [ "$#" -ne 16 ]; then
     usage
 fi
+
+
+# Check the number of processor threads
+# cpu_threads=$(grep -c ^processor /proc/cpuinfo)
+# if [ "$cpu_threads" -lt 24 ]; then
+#     echo "Error: Your system has less than 24 threads ($cpu_threads detected). Installation aborted your not able to Mine on TIGPool."
+#     exit 1
+# fi
+
 
 # Initialize variables for parameters
 id_slave=""
 nom_slave=""
 ip=""
-port=""
 v=""
 login_discord=""
 private_key=""
@@ -35,10 +43,6 @@ while [[ "$#" -gt 0 ]]; do
             ;;
         -ip)
             ip="$2"
-            shift 2
-            ;;
-        -port)
-            port="$2"
             shift 2
             ;;
         -v)
@@ -69,7 +73,7 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 # Ensure variables are not empty
-if [ -z "$id_slave" ] || [ -z "$nom_slave" ] || [ -z "$ip" ] || [ -z "$port" ] || [ -z "$login_discord" ] || [ -z "$private_key" ] || [ -z "$URL_SERVER" ]|| [ -z "$branch" ]; then
+if [ -z "$id_slave" ] || [ -z "$nom_slave" ] || [ -z "$ip" ] ||  [ -z "$login_discord" ] || [ -z "$private_key" ] || [ -z "$URL_SERVER" ]|| [ -z "$branch" ]; then
     usage
 fi
 
@@ -85,7 +89,6 @@ current_path=$(pwd)
 echo "ID Slave: $id_slave"
 echo "Slave Name: $nom_slave"
 echo "IP: $ip"
-echo "Port: $port"
 echo "Login: $login_discord"
 echo "Private Key: $private_key"
 echo "URL Server: $URL_SERVER"
@@ -121,20 +124,6 @@ cd $current_path
 
 python3 -m venv venv
 
-mkdir -p tig-benchmarker
-cd tig-benchmarker
-wget --no-cache https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/tig-benchmarker/slave.py -O slave.py
-wget --no-cache https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/tig-benchmarker/requirements.txt -O requirements.txt
-mkdir -p common
-cd common
-wget --no-cache https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/tig-benchmarker/common/__init__.py -O __init__.py
-wget --no-cache https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/tig-benchmarker/common/merkle_tree.py -O merkle_tree.py
-wget --no-cache https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/tig-benchmarker/common/structs.py -O structs.py
-wget --no-cache https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/tig-benchmarker/common/utils.py -O utils.py
-
-
-
-
 cd $current_path
 ./venv/bin/pip3 install -r tig-benchmarker/requirements.txt
 
@@ -149,7 +138,13 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-wget --no-cache https://github.com/tig-pool-nk/client/raw/refs/heads/$branch/bin/bench -O bench
+wget https://github.com/tig-pool-nk/client/raw/refs/heads/$branch/bin/slave -O slave
+if [ $? -ne 0 ]; then
+    echo "Error downloading slave"
+    exit 1
+fi
+
+wget https://github.com/tig-pool-nk/client/raw/refs/heads/$branch/bin/bench -O bench
 if [ $? -ne 0 ]; then
     echo "Error downloading bench"
     exit 1
@@ -166,6 +161,7 @@ fi
 chmod +x client_tig_pool
 chmod +x bench
 chmod +x tig_idle
+chmod +x slave
 
 cd $current_path
 
@@ -178,8 +174,7 @@ sed -i "s|@login@|$login_discord|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
 sed -i "s|@tok@|$private_key|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
 sed -i "s|@worker@|$nom_slave|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
 sed -i "s|@ip@|$ip|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
-sed -i "s|@port@|$port|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
-sed -i "s|@url@|http://$URL_SERVER|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
+sed -i "s|@url@|https://$URL_SERVER|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
 sed -i "s|@version@|$v|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
 
 # Grant execution permissions to the launch file
