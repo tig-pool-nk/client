@@ -151,16 +151,9 @@ if [ $? -ne 0 ]; then
 fi
 
 
-wget --no-cache https://github.com/tig-pool-nk/client/raw/refs/heads/$branch/bin/tig_idle -O tig_idle
-if [ $? -ne 0 ]; then
-    echo "Error downloading tig_idle"
-    exit 1
-fi
-
 # Grant execution permissions to both files
 chmod +x client_tig_pool
 chmod +x bench
-chmod +x tig_idle
 chmod +x slave
 
 cd $current_path
