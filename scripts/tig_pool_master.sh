@@ -212,8 +212,11 @@ echo ""
 echo -e "\e[32mTIG $branch Pool has been installed successfully!\e[0m"
 echo ""
 
-echo "To follow the benchmarker, use the commands below:"
+echo "You need to wait about 10 min to start getting Works and start to mine"
 echo
+echo "To follow the benchmarker, use the commands below:"
+
+
 echo "  1. Follow pool:"
 echo "     tail -f ~/tig_pool_main/logs/pool_tig.log"
 echo        
