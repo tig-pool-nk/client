@@ -179,7 +179,7 @@ echo "Script completed successfully. Files have been downloaded, configured, and
 
 pkill -f slave_tig && pkill -f pool_tig*
 
-
+screen -wipe >/dev/null 2>&1 || true
 
 
 # Start a new screen called pool_tig and execute the script pool_tig_launch_${id_slave}_${nom_slave}.sh
