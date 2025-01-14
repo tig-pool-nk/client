@@ -125,7 +125,6 @@ cd $current_path
 python3 -m venv venv
 
 cd $current_path
-./venv/bin/pip3 install -r tig-benchmarker/requirements.txt
 
 # Create a directory client_xnico_pool and navigate to it
 mkdir -p bin
