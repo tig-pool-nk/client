@@ -1,24 +1,23 @@
 #!/bin/bash
 
 # Vérification du nombre d'arguments
-if [ "$#" -ne 6 ] && [ "$#" -ne 7 ]; then
+if [ "$#" -ne 5 ] && [ "$#" -ne 6 ]; then
     echo "wrong parameters"
     exit 1
 fi
 
 # Affectation des paramètres
 slave_id=$1
-slave_name=$2
-server_url=$3
-login=$4
-private_key=$5
-client_version=$6
+server_url=$2
+login=$3
+private_key=$4
+client_version=$5
 
 # Définir la branche par défaut sur "main"
 branch="main"
 
 # Vérifier si un 8ème argument est passé et correspond à "testnet"
-if [ "$#" -eq 7 ] && [ "$7" = "testnet" ]; then
+if [ "$#" -eq 6 ] && [ "$6" = "testnet" ]; then
     branch="test"
 fi
 
@@ -29,7 +28,6 @@ fi
 
 # Affichage des paramètres pour debug
 echo "Slave ID: $slave_id"
-echo "Slave Name: $slave_name"
 echo "Server URL: $server_url"
 echo "Login: $login"
 echo "Private Key: $private_key"
@@ -59,7 +57,6 @@ sudo chmod +x tig_pool_master.sh
 # Exécuter le script téléchargé avec les paramètres appropriés
 ./tig_pool_master.sh \
     -id_slave "$slave_id" \
-    -nom_slave "$slave_name" \
     -ip "$server_url" \
     -login "$login" \
     -tok "$private_key" \
