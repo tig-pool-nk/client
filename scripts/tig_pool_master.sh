@@ -2,27 +2,26 @@
 
 # Function to display usage
 usage() {
-    echo "Usage: $0 -id_slave <id_slave> -nom_slave <nom_slave> -ip <ip> -login <login_discord> -tok <private_key> -url <URL_SERVER> -b <branch>"
+    echo "Usage: $0 -id_slave <id_slave> -ip <ip> -login <login_discord> -tok <private_key> -url <URL_SERVER> -b <branch>"
     exit 1
 }
 
 # Check if the total number of arguments ok
-if [ "$#" -ne 16 ]; then
+if [ "$#" -ne 14 ]; then
     usage
 fi
 
 
 # Check the number of processor threads
-# cpu_threads=$(grep -c ^processor /proc/cpuinfo)
-# if [ "$cpu_threads" -lt 24 ]; then
-#     echo "Error: Your system has less than 24 threads ($cpu_threads detected). Installation aborted your not able to Mine on TIGPool."
-#     exit 1
-# fi
+cpu_threads=$(grep -c ^processor /proc/cpuinfo)
+if [ "$cpu_threads" -lt 24 ]; then
+    echo "Your system has less than 24 threads ($cpu_threads detected). Installation aborted. You are not able to mine on TIGPool."
+    exit 1
+fi
 
 
 # Initialize variables for parameters
 id_slave=""
-nom_slave=""
 ip=""
 v=""
 login_discord=""
@@ -35,10 +34,6 @@ while [[ "$#" -gt 0 ]]; do
     case $1 in
         -id_slave)
             id_slave="$2"
-            shift 2
-            ;;
-        -nom_slave)
-            nom_slave="$2"
             shift 2
             ;;
         -ip)
@@ -73,7 +68,7 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 # Ensure variables are not empty
-if [ -z "$id_slave" ] || [ -z "$nom_slave" ] || [ -z "$ip" ] ||  [ -z "$login_discord" ] || [ -z "$private_key" ] || [ -z "$URL_SERVER" ]|| [ -z "$branch" ]; then
+if [ -z "$id_slave" ] || [ -z "$ip" ] ||  [ -z "$login_discord" ] || [ -z "$private_key" ] || [ -z "$URL_SERVER" ]|| [ -z "$branch" ]; then
     usage
 fi
 
@@ -87,7 +82,6 @@ current_path=$(pwd)
 
 # Display parameters (or execute other logic with these values)
 echo "ID Slave: $id_slave"
-echo "Slave Name: $nom_slave"
 echo "IP: $ip"
 echo "Login: $login_discord"
 echo "Private Key: $private_key"
@@ -96,10 +90,7 @@ echo "Current path: $current_path"
 echo "Current branch: $branch"
 
 sudo apt update
-sudo apt install -y python3 python3-venv python3-dev
-sudo apt install -y build-essential
-sudo apt install -y cargo
-sudo apt install -y curl tmux git libssl-dev pkg-config
+sudo apt install -y build-essential cargo curl tmux git libssl-dev pkg-config
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 source $HOME/.cargo/env
 sudo apt install -y libssl-dev
@@ -112,18 +103,11 @@ sudo chmod -R 777 wasms/
 # Clone the Git repository with the specified branch
 git clone -b $branch https://github.com/tig-pool-nk/tig-monorepo.git
 
-
-
-
 # Navigate to the benchmarker directory and build the project with cargo
 cd tig-monorepo/tig-worker/
 cargo build -p tig-worker --release
 
 # Install the benchmarker
-cd $current_path
-
-python3 -m venv venv
-
 cd $current_path
 
 # Create a directory client_xnico_pool and navigate to it
@@ -149,7 +133,6 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-
 # Grant execution permissions to both files
 chmod +x client_tig_pool
 chmod +x bench
@@ -158,32 +141,30 @@ chmod +x slave
 cd $current_path
 
 # Download the launch file and rename it according to the provided parameters
-wget --no-cache -O pool_tig_launch_${id_slave}_${nom_slave}.sh https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/scripts/pool_tig_launch_master.sh
+wget --no-cache -O pool_tig_launch_${id_slave}.sh https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/scripts/pool_tig_launch_master.sh
 
 # Replace placeholders with variable values
-sed -i "s|@id@|$id_slave|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
-sed -i "s|@login@|$login_discord|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
-sed -i "s|@tok@|$private_key|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
-sed -i "s|@worker@|$nom_slave|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
-sed -i "s|@ip@|$ip|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
-sed -i "s|@url@|https://$URL_SERVER|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
-sed -i "s|@version@|$v|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
+sed -i "s|@id@|$id_slave|g" pool_tig_launch_${id_slave}.sh
+sed -i "s|@login@|$login_discord|g" pool_tig_launch_${id_slave}.sh
+sed -i "s|@tok@|$private_key|g" pool_tig_launch_${id_slave}.sh
+sed -i "s|@ip@|$ip|g" pool_tig_launch_${id_slave}.sh
+sed -i "s|@url@|https://$URL_SERVER|g" pool_tig_launch_${id_slave}.sh
+sed -i "s|@version@|$v|g" pool_tig_launch_${id_slave}.sh
 
 # Grant execution permissions to the launch file
-chmod +x pool_tig_launch_${id_slave}_${nom_slave}.sh
+chmod +x pool_tig_launch_${id_slave}.sh
 
 # Replace @@path@@ with the current path in the launch file
-sed -i "s|@@path@@|$current_path/|g" pool_tig_launch_${id_slave}_${nom_slave}.sh
+sed -i "s|@@path@@|$current_path/|g" pool_tig_launch_${id_slave}.sh
 
 echo "Script completed successfully. Files have been downloaded, configured, and the path has been updated."
 
-pkill -f slave_tig && pkill -f pool_tig*
 
+pkill -f slave_tig && pkill -f pool_tig*
 screen -wipe >/dev/null 2>&1 || true
 
-
-# Start a new screen called pool_tig and execute the script pool_tig_launch_${id_slave}_${nom_slave}.sh
-screen -dmL -Logfile "$current_path/logs/pool_tig.log" -S pool_tig bash -c "cd \"$current_path\" && ./pool_tig_launch_${id_slave}_${nom_slave}.sh ; exec bash"
+# Start a new screen called pool_tig and execute the script pool_tig_launch_${id_slave}.sh
+screen -dmL -Logfile "$current_path/logs/pool_tig.log" -S pool_tig bash -c "cd \"$current_path\" && ./pool_tig_launch_${id_slave}.sh ; exec bash"
 
 
 
@@ -209,18 +190,13 @@ echo ""
 echo -e "\e[32mTIG $branch Pool has been installed successfully!\e[0m"
 echo ""
 
-echo "You need to wait about 10 min to start getting Works and start to mine"
-echo
 echo "To follow the benchmarker, use the commands below:"
-
+echo
 
 echo "  1. Follow pool:"
 echo "     tail -f ~/tig_pool_main/logs/pool_tig.log"
-echo        
-echo "  2. Follow slave:"
-echo "     tail -f ~/tig_pool_main/logs/slave_tig.log"
 echo
-echo "  3. Have some time to lose :)"
+echo "  2. Have some time to lose :)"
 echo "     bash ~/tig_pool_main/game/snake.sh"
 echo
 echo -e "\e[33mGood mining and happy benchmarking!\e[0m"
