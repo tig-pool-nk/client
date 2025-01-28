@@ -192,6 +192,7 @@ echo ""
 
 echo "To follow the benchmarker, use the commands below:"
 echo
+
 echo "  1. Follow pool:"
 echo "     tail -f ~/tig_pool_main/logs/pool_tig.log"
 echo
