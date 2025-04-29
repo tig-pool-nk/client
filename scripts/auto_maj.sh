@@ -40,5 +40,6 @@ fi
 sudo pkill screen
 sudo pkill client_tig_pool
 sudo pkill slave
+sudo pkill bench
 
 bash <(wget --no-cache -qO- https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/install.sh) $id_slave bench.tigpool.com $login_discord $token_private 22 mainnet
