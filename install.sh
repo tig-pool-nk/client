@@ -35,12 +35,33 @@ echo "Client Version: $client_version"
 echo "Branch: $branch"
 
 # Suppression et recréation du répertoire
+mkdir -p $HOME/.tig/$branch
 rm -rf "tig_pool_$branch"
 mkdir "tig_pool_$branch"
 cd "tig_pool_$branch" || exit 1
 
+# Save parameters
+install_url="https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/install.sh"
+cat > "$HOME/.tig/$branch/.tig_env" <<EOF
+TIG_PATH=$PWD
+ID_SLAVE=$slave_id
+MASTER=$server_url
+LOGIN_DISCORD=$login
+TOKEN=$private_key
+BRANCH=$branch
+MODE=$6
+INSTALL_URL=$install_url
+EOF
+
+# Save version
+cat > "$HOME/.tig/$branch/version.txt" <<EOF
+$client_version
+EOF
+
 # Arrêter les écrans nommés pool_tig existants
 screen -ls | grep pool_tig | awk '{print $1}' | xargs -I {} screen -S {} -X kill
+screen -ls | grep tig_updater | awk '{print $1}' | xargs -I {} screen -S {} -X kill
+rm "$HOME/.tig/$BRANCH/install_temp.sh" > /dev/null 2>&1 || true
 
 # Télécharger et exécuter le script mis à jour
 script_url="https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/scripts/tig_pool_master.sh"
@@ -52,7 +73,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-sudo chmod +x tig_pool_master.sh
+chmod +x tig_pool_master.sh
 
 # Exécuter le script téléchargé avec les paramètres appropriés
 ./tig_pool_master.sh \
