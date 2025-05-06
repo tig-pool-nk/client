@@ -13,11 +13,6 @@ login=$3
 private_key=$4
 client_version=$5
 
-install_url="${BASH_SOURCE[0]}"
-if [[ "$install_url" == "/dev/fd/"* ]]; then
-  install_url=$(cat /proc/$$/cmdline | tr '\0' '\n' | grep -Eo 'https://[^ ]+')
-fi
-
 # Définir la branche par défaut sur "main"
 branch="main"
 
@@ -45,6 +40,7 @@ mkdir "tig_pool_$branch"
 cd "tig_pool_$branch" || exit 1
 
 # Save parameters
+install_url="https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/install.sh"
 cat > ".tig_env" <<EOF
 PATH=$PWD
 ID_SLAVE=$slave_id
