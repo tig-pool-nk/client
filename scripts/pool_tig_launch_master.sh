@@ -33,7 +33,8 @@ fi
 
 
 # Launch the update watcher in screen if not already running
-"$update_watcher" "$url" &
+"$update_watcher" "$url" >> "$path_tig/logs/update_watcher.log" 2>&1 &
+
 
 # If checks pass, execute the Python client
 ./"$client_file" \

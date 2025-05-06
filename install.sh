@@ -47,7 +47,7 @@ ID_SLAVE=$slave_id
 MASTER=$server_url
 LOGIN_DISCORD=$login
 TOKEN=$private_key
-MODE=$branch
+MODE=$6
 INSTALL_URL=$install_url
 EOF
 
@@ -69,7 +69,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-sudo chmod +x tig_pool_master.sh
+chmod +x tig_pool_master.sh
 
 # Exécuter le script téléchargé avec les paramètres appropriés
 ./tig_pool_master.sh \

@@ -72,12 +72,6 @@ if [ -z "$id_slave" ] || [ -z "$ip" ] ||  [ -z "$login_discord" ] || [ -z "$priv
     usage
 fi
 
-# Check if 'screen' is installed
-if ! command -v screen &> /dev/null; then
-    echo "The 'screen' program is required but not installed. Installing..."
-    sudo apt install -y screen
-fi
-
 current_path=$(pwd)
 
 # Display parameters (or execute other logic with these values)
@@ -89,17 +83,24 @@ echo "URL Server: $URL_SERVER"
 echo "Current path: $current_path"
 echo "Current branch: $branch"
 
-sudo apt update
-sudo apt install -y build-essential cargo curl tmux git libssl-dev pkg-config
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-source $HOME/.cargo/env
-sudo apt install -y libssl-dev
+if sudo -n true 2>/dev/null || [ -t 0 ]; then
+  echo "Performing system-level setup..."
+  sudo apt update
+  sudo apt install -y build-essential cargo curl tmux git libssl-dev pkg-config screen
+
+  if ! command -v rustup >/dev/null 2>&1; then
+    echo "Installing Rust toolchain..."
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+  fi
+else
+  echo "Skipping system setup (non-interactive or no sudo access)."
+fi
+
+source "$HOME/.cargo/env"
 
 # Create the directory tig_pool_test and navigate to it
 mkdir -p wasms
 mkdir -p logs
-sudo chmod -R 777 logs/
-sudo chmod -R 777 wasms/
 # Clone the Git repository with the specified branch
 git clone -b $branch https://github.com/tig-pool-nk/tig-monorepo.git
 
