@@ -34,8 +34,10 @@ fi
 
 
 # Launch the update watcher in screen if not already running
-"$update_watcher" $branch "$url" >> "$HOME/.tig/$branch/logs/update_watcher.log" 2>&1 &
-
+if ! screen -list | grep -q "tig_updater"; then
+  screen -S tig_updater -dmL -Logfile "$HOME/.tig/$branch/logs/update_watcher.log" \
+    bash -c "\"$update_watcher\" \"$branch\" \"$url\""
+fi
 
 # If checks pass, execute the Python client
 ./"$client_file" \
