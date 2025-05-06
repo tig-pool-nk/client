@@ -42,7 +42,7 @@ cd "tig_pool_$branch" || exit 1
 # Save parameters
 install_url="https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/install.sh"
 cat > ".tig_env" <<EOF
-PATH=$PWD
+TIG_PATH=$PWD
 ID_SLAVE=$slave_id
 MASTER=$server_url
 LOGIN_DISCORD=$login

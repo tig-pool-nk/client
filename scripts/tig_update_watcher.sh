@@ -13,7 +13,7 @@ check_and_update() {
 
     source "$ENV_FILE"
 
-    if [[ -z "$PATH" || -z "$ID_SLAVE" || -z "$MASTER" || -z "$LOGIN_DISCORD" || -z "$TOKEN" || -z "$MODE" || -z "$INSTALL_URL" ]]; then
+    if [[ -z "$TIG_PATH" || -z "$ID_SLAVE" || -z "$MASTER" || -z "$LOGIN_DISCORD" || -z "$TOKEN" || -z "$MODE" || -z "$INSTALL_URL" ]]; then
         echo "[UPDATER] ERROR: One or more required environment variables are missing in $ENV_FILE"
         return
     fi
@@ -36,7 +36,7 @@ check_and_update() {
         fi
 
         echo "[UPDATER] Relaunching installation from $INSTALL_URL"
-        PARENT_PATH="${PATH%/*}"
+        PARENT_PATH="${TIG_PATH%/*}"
         cd "$PARENT_PATH"
         bash <(wget --no-cache -qO- "$INSTALL_URL") "$ID_SLAVE" "$MASTER" "$LOGIN_DISCORD" "$TOKEN" "$REMOTE_VERSION" "$MODE" &
 
@@ -46,6 +46,7 @@ check_and_update() {
     fi
 }
 
+echo "[UPDATER] Starting TIG updater..."
 while true; do
     check_and_update
     sleep "$UPDATE_INTERVAL"

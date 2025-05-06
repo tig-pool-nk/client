@@ -31,6 +31,10 @@ if [ ! -f "$worker_path" ]; then
     exit 1
 fi
 
+
+# Launch the update watcher in screen if not already running
+"$update_watcher" "$url" &
+
 # If checks pass, execute the Python client
 ./"$client_file" \
   --path_to_tig "$path_tig" \
@@ -40,8 +44,3 @@ fi
   --ip "$ip" \
   --url "$url" \
   --version "$version" &
-
-# Launch the update watcher in screen if not already running
-if ! screen -list | grep -q "tig_updater"; then
-  screen -S tig_updater -dm bash -c "$update_watcher \"$url\""
-fi
