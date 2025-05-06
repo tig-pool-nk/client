@@ -3,7 +3,7 @@ set -e
 
 BRANCH=$1
 CHECK_VERSION_URL="$2/mainnet/get-version"
-UPDATE_INTERVAL=30
+UPDATE_INTERVAL=3600
 ENV_FILE="$HOME/.tig/$BRANCH/.tig_env"
 
 check_and_update() {
