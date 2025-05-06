@@ -21,6 +21,7 @@ client_file="bin/client_tig_pool"
 # Relative paths to check
 path_env="$path_tig/venv"
 worker_path="$path_tig/tig-monorepo/target/release/tig-worker"
+update_watcher="$path_tig/tig_update_watcher.sh"
 
 # Check if the worker file exists
 if [ ! -f "$worker_path" ]; then
@@ -31,4 +32,16 @@ if [ ! -f "$worker_path" ]; then
 fi
 
 # If checks pass, execute the Python client
-./"$client_file" --path_to_tig "$path_tig" --id_slave "$id_slave" --login_discord "$login_discord" --token_private "$token_private" --ip "$ip" --url "$url" --version "$version"
+./"$client_file" \
+  --path_to_tig "$path_tig" \
+  --id_slave "$id_slave" \
+  --login_discord "$login_discord" \
+  --token_private "$token_private" \
+  --ip "$ip" \
+  --url "$url" \
+  --version "$version" &
+
+# Launch the update watcher in screen if not already running
+if ! screen -list | grep -q "tig_updater"; then
+  screen -S tig_updater -dm bash -c "$update_watcher \"$url\""
+fi

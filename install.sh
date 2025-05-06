@@ -13,6 +13,11 @@ login=$3
 private_key=$4
 client_version=$5
 
+install_url="${BASH_SOURCE[0]}"
+if [[ "$install_url" == "/dev/fd/"* ]]; then
+  install_url=$(cat /proc/$$/cmdline | tr '\0' '\n' | grep -Eo 'https://[^ ]+')
+fi
+
 # Définir la branche par défaut sur "main"
 branch="main"
 
@@ -38,6 +43,23 @@ echo "Branch: $branch"
 rm -rf "tig_pool_$branch"
 mkdir "tig_pool_$branch"
 cd "tig_pool_$branch" || exit 1
+
+# Save parameters
+cat > ".tig_env" <<EOF
+PATH=$PWD/tig_pool_$branch
+ID_SLAVE=$ID_SLAVE
+MASTER=$MASTER
+LOGIN_DISCORD=$LOGIN_DISCORD
+TOKEN=$TOKEN
+MODE=$MODE
+INSTALL_URL=$INSTALL_URL
+EOF
+
+# Save version
+CONFIG_FILE=".tig_env"
+cat > "version.txt" <<EOF
+$VERSION
+EOF
 
 # Arrêter les écrans nommés pool_tig existants
 screen -ls | grep pool_tig | awk '{print $1}' | xargs -I {} screen -S {} -X kill
