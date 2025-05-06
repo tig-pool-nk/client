@@ -101,6 +101,8 @@ source "$HOME/.cargo/env"
 # Create the directory tig_pool_test and navigate to it
 mkdir -p wasms
 mkdir -p logs
+mkdir -p $HOME/.tig/$branch/logs
+
 # Clone the Git repository with the specified branch
 git clone -b $branch https://github.com/tig-pool-nk/tig-monorepo.git
 
@@ -155,6 +157,7 @@ sed -i "s|@tok@|$private_key|g" pool_tig_launch_${id_slave}.sh
 sed -i "s|@ip@|$ip|g" pool_tig_launch_${id_slave}.sh
 sed -i "s|@url@|https://$URL_SERVER|g" pool_tig_launch_${id_slave}.sh
 sed -i "s|@version@|$v|g" pool_tig_launch_${id_slave}.sh
+sed -i "s|@branch@|$branch|g" pool_tig_launch_${id_slave}.sh
 
 # Grant execution permissions to the launch file
 chmod +x pool_tig_launch_${id_slave}.sh

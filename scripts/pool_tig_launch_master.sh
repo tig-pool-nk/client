@@ -5,6 +5,7 @@ id_slave="@id@"
 login_discord="@login@"
 token_private="@tok@"
 version="@version@"
+branch="@branch@"
 
 # TIG Server
 ip="@ip@"
@@ -33,7 +34,7 @@ fi
 
 
 # Launch the update watcher in screen if not already running
-"$update_watcher" "$url" >> "$path_tig/logs/update_watcher.log" 2>&1 &
+"$update_watcher" $branch "$url" >> "$HOME/.tig/$branch/logs/update_watcher.log" 2>&1 &
 
 
 # If checks pass, execute the Python client

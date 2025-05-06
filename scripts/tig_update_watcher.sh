@@ -1,9 +1,10 @@
 #!/bin/bash
 set -e
 
-CHECK_VERSION_URL="$1/mainnet/get-version"
+BRANCH=$1
+CHECK_VERSION_URL="$2/mainnet/get-version"
 UPDATE_INTERVAL=30
-ENV_FILE=".tig_env"
+ENV_FILE="$HOME/.tig/$BRANCH/.tig_env"
 
 check_and_update() {
     if [[ ! -f "$ENV_FILE" ]]; then

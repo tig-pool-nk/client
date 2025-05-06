@@ -35,24 +35,26 @@ echo "Client Version: $client_version"
 echo "Branch: $branch"
 
 # Suppression et recréation du répertoire
+mkdir -p $HOME/.tig/$branch
 rm -rf "tig_pool_$branch"
 mkdir "tig_pool_$branch"
 cd "tig_pool_$branch" || exit 1
 
 # Save parameters
 install_url="https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/install.sh"
-cat > ".tig_env" <<EOF
+cat > "$HOME/.tig/$branch/.tig_env" <<EOF
 TIG_PATH=$PWD
 ID_SLAVE=$slave_id
 MASTER=$server_url
 LOGIN_DISCORD=$login
 TOKEN=$private_key
+BRANCH=$branch
 MODE=$6
 INSTALL_URL=$install_url
 EOF
 
 # Save version
-cat > "version.txt" <<EOF
+cat > "$HOME/.tig/$branch/version.txt" <<EOF
 $client_version
 EOF
 
