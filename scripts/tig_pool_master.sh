@@ -83,7 +83,7 @@ echo "URL Server: $URL_SERVER"
 echo "Current path: $current_path"
 echo "Current branch: $branch"
 
-if sudo -n true 2>/dev/null || [ -t 0 ]; then
+if [[ $- == *i* ]] || ([[ -t 0 && -t 1 ]] && sudo -n true 2>/dev/null); then
   echo "Performing system-level setup..."
   sudo apt update
   sudo apt install -y build-essential cargo curl tmux git libssl-dev pkg-config screen
