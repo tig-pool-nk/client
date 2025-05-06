@@ -46,19 +46,18 @@ cd "tig_pool_$branch" || exit 1
 
 # Save parameters
 cat > ".tig_env" <<EOF
-PATH=$PWD/tig_pool_$branch
-ID_SLAVE=$ID_SLAVE
-MASTER=$MASTER
-LOGIN_DISCORD=$LOGIN_DISCORD
-TOKEN=$TOKEN
-MODE=$MODE
-INSTALL_URL=$INSTALL_URL
+PATH=$PWD
+ID_SLAVE=$slave_id
+MASTER=$server_url
+LOGIN_DISCORD=$login
+TOKEN=$private_key
+MODE=$branch
+INSTALL_URL=$install_url
 EOF
 
 # Save version
-CONFIG_FILE=".tig_env"
 cat > "version.txt" <<EOF
-$VERSION
+$client_version
 EOF
 
 # Arrêter les écrans nommés pool_tig existants
