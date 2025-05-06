@@ -61,6 +61,7 @@ EOF
 # Arrêter les écrans nommés pool_tig existants
 screen -ls | grep pool_tig | awk '{print $1}' | xargs -I {} screen -S {} -X kill
 screen -ls | grep tig_updater | awk '{print $1}' | xargs -I {} screen -S {} -X kill
+rm "$HOME/.tig/$BRANCH/install_temp.sh" > /dev/null 2>&1 || true
 
 # Télécharger et exécuter le script mis à jour
 script_url="https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/scripts/tig_pool_master.sh"
