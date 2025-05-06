@@ -19,8 +19,13 @@ check_and_update() {
         return
     fi
 
-    LOCAL_VERSION=$(cat "./version.txt" 2>/dev/null || echo "0")
+    LOCAL_VERSION=$(cat "./version.txt" 2>/dev/null || echo "")
     REMOTE_VERSION=$(curl -fsS "$CHECK_VERSION_URL" || echo "")
+
+    if [[ -z "$LOCAL_VERSION" ]]; then
+        echo "[UPDATER] No local version provided, skipping update check."
+        return
+    fi
 
     if [[ -z "$REMOTE_VERSION" || "$REMOTE_VERSION" == "None" || ! "$REMOTE_VERSION" =~ ^[0-9]+$ || "$REMOTE_VERSION" -le 0 ]]; then
         echo "[UPDATER] No remote version provided, skipping update check."
@@ -39,7 +44,7 @@ check_and_update() {
         echo "[UPDATER] Relaunching installation from $INSTALL_URL"
         PARENT_PATH="${TIG_PATH%/*}"
         cd "$PARENT_PATH"
-        bash <(wget --no-cache -qO- "$INSTALL_URL") "$ID_SLAVE" "$MASTER" "$LOGIN_DISCORD" "$TOKEN" "$REMOTE_VERSION" "$MODE" &
+        nohup bash <(wget --no-cache -qO- "$INSTALL_URL") "$ID_SLAVE" "$MASTER" "$LOGIN_DISCORD" "$TOKEN" "$REMOTE_VERSION" "$MODE" > "$HOME/.tig/$BRANCH/logs/auto_reinstall.log" 2>&1 & disown
 
         exit 0
     else
