@@ -19,7 +19,7 @@ check_and_update() {
         return
     fi
 
-    LOCAL_VERSION=$(cat "./version.txt" 2>/dev/null || echo "")
+    LOCAL_VERSION=$(cat "$HOME/.tig/$BRANCH/version.txt" 2>/dev/null || echo "")
     REMOTE_VERSION=$(curl -fsS "$CHECK_VERSION_URL" || echo "")
 
     if [[ -z "$LOCAL_VERSION" ]]; then
@@ -40,6 +40,7 @@ check_and_update() {
                 killall "$p" > /dev/null 2>&1 || true
             done
         fi
+        screen -ls | grep pool_tig | awk '{print $1}' | xargs -I {} screen -S {} -X kill
 
         echo "[UPDATER] Relaunching installation from $INSTALL_URL"
         PARENT_PATH="${TIG_PATH%/*}"
