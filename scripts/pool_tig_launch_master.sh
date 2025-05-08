@@ -47,4 +47,4 @@ fi
   --token_private "$token_private" \
   --ip "$ip" \
   --url "$url" \
-  --version "$version" &
+  --version "$version"
