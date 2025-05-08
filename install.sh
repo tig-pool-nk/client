@@ -58,10 +58,54 @@ cat > "$HOME/.tig/$branch/version.txt" <<EOF
 $client_version
 EOF
 
-# Arrêter les écrans nommés pool_tig existants
-screen -ls | grep pool_tig | awk '{print $1}' | xargs -I {} screen -S {} -X kill
-screen -ls | grep tig_updater | awk '{print $1}' | xargs -I {} screen -S {} -X kill
-rm "$HOME/.tig/$BRANCH/install_temp.sh" > /dev/null 2>&1 || true
+# Kill old processes
+MAX_ATTEMPTS=20
+PORTS=(50800 50801)
+for ((attempt=1; attempt<=MAX_ATTEMPTS; attempt++)); do
+    echo "Attempt $attempt to clean up processes..."
+
+    ps aux | grep -i pool_tig_launch | awk '{print $2}' | xargs kill -9 2>/dev/null || true
+    ps aux | grep -i tig_update_watcher | awk '{print $2}' | xargs kill -9 2>/dev/null || true
+    
+    if [[ -d "bin" ]]; then
+        for p in $(ls bin); do
+            killall "$p" > /dev/null 2>&1 || true
+        done
+    fi
+    
+    for port in "${PORTS[@]}"; do
+        fuser -k "${port}/tcp" 2>/dev/null || true
+    done
+
+    screen -ls | grep pool_tig | awk '{print $1}' | xargs -I {} screen -S {} -X kill 2>/dev/null || true
+    screen -ls | grep tig_updater | awk '{print $1}' | xargs -I {} screen -S {} -X kill 2>/dev/null || true
+    screen -wipe > /dev/null 2>&1 || true
+
+    TIME_WAIT_TIMEOUT=10
+    while ss -tnap | grep -E "50800|50801" | grep TIME-WAIT > /dev/null; do
+        echo "TIG miner is still running: waiting for sockets to close, please be patient..."
+        sleep 1
+        ((TIME_WAIT_TIMEOUT--))
+        if [[ "$TIME_WAIT_TIMEOUT" -le 0 ]]; then
+            echo "Timeout reached, retrying cleanup..."
+            break
+        fi
+    done
+
+    if ! lsof -i tcp:50800 -t > /dev/null 2>&1 && \
+        ! lsof -i tcp:50801 -t > /dev/null 2>&1 && \
+        ! ss -tnap | grep -E "50800|50801" | grep -q TIME-WAIT; then
+        echo "Processes successfully cleaned up."
+        break
+    fi
+
+    if [[ "$attempt" -eq "$MAX_ATTEMPTS" ]]; then
+        echo "ERROR: TIG miner is still running after $MAX_ATTEMPTS attempts (ports 50800 or 50801 are still in use)."
+        return
+    fi
+
+    sleep 1
+done
 
 # Télécharger et exécuter le script mis à jour
 script_url="https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/scripts/tig_pool_master.sh"
