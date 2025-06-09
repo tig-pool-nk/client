@@ -93,28 +93,28 @@ if [[ "$no_setup" != "true" ]]; then
   sudo apt update
   sudo apt install -y screen
 
-  # Check if Docker is installed
-  if ! command -v docker > /dev/null; then
-    echo "Docker not found. Installing Docker..."
-    
-    # Install rootless Docker using the official script
-    sudo apt install -y uidmap
-    curl -fsSL https://get.docker.com -o get-docker.sh
-    sudo sh get-docker.sh
-    dockerd-rootless-setuptool.sh install
-    \rm get-docker.sh
+    # Check if Docker is installed
+    if ! command -v docker > /dev/null; then
+        echo "Docker not found. Installing Docker..."
 
-  else
-    # Docker is installed: check if it's usable without sudo
-    if ! docker info > /dev/null 2>&1; then
-      echo "Docker is installed but not usable without sudo. Please configure rootless Docker."
-      exit 1
-    else
-      echo "Docker is already installed and usable without sudo."
+        # Install rootless Docker using the official script
+        sudo apt install -y uidmap
+        curl -fsSL https://get.docker.com -o get-docker.sh
+        sudo sh get-docker.sh
+        dockerd-rootless-setuptool.sh install
+        \rm get-docker.sh
+
+        else
+        # Docker is installed: check if it's usable without sudo
+        if ! docker info > /dev/null 2>&1; then
+            echo "Docker is installed but not usable without sudo. Please configure rootless Docker."
+            exit 1
+        else
+            echo "Docker is already installed and usable without sudo."
+        fi
     fi
-  fi
 
-  # Check if cuda is installed
+    # Check if cuda is installed
     if command -v nvidia-smi > /dev/null; then
         echo "NVIDIA GPU detected"
 
@@ -170,12 +170,6 @@ if [[ "$no_setup" != "true" ]]; then
             source ~/.bashrc
 
             echo "CUDA Toolkit successfully installed"
-
-            else
-                echo "Automatic install only supported for Ubuntu ≥ 22.04 and Debian ≥ 12"
-                echo "Please install CUDA manually from https://developer.nvidia.com/cuda-downloads"
-                exit 1
-            fi
         fi
 
     else
