@@ -21,20 +21,7 @@ client_file="bin/client_tig_pool"
 
 # Relative paths to check
 path_env="$path_tig/venv"
-worker_path="$path_tig/tig-monorepo/target/release/tig-worker"
 update_watcher="$path_tig/tig_update_watcher.sh"
-
-
-echo "Launching TIG miner $id_slave..."
-
-# Check if the worker file exists
-if [ ! -f "$worker_path" ]; then
-    echo "The tig-worker file does not exist at $worker_path. Please build it before proceeding."
-    echo "To build it, run:"
-    echo "cd $path_tig/tig-monorepo && cargo build --release"
-    exit 1
-fi
-
 
 # Kill old processes
 MAX_ATTEMPTS=20
@@ -98,4 +85,5 @@ fi
   --token_private "$token_private" \
   --ip "$ip" \
   --url "$url" \
-  --version "$version"
+  --version "$version" \
+  --branch "$branch"

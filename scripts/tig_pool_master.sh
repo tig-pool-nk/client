@@ -11,7 +11,6 @@ if [ "$#" -ne 14 ]; then
     usage
 fi
 
-
 # Check the number of processor threads
 cpu_threads=$(grep -c ^processor /proc/cpuinfo)
 if [ "$cpu_threads" -lt 24 ]; then
@@ -86,29 +85,36 @@ echo "Current branch: $branch"
 if [[ $- == *i* ]] || ([[ -t 0 && -t 1 ]] && sudo -n true 2>/dev/null); then
   echo "Performing system-level setup..."
   sudo apt update
-  sudo apt install -y build-essential cargo curl tmux git libssl-dev pkg-config screen
+  sudo apt install -y screen
 
-  if ! command -v rustup >/dev/null 2>&1; then
-    echo "Installing Rust toolchain..."
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+  # Check if Docker is installed
+  if ! command -v docker > /dev/null; then
+    echo "Docker not found. Installing Docker..."
+    
+    # Install rootless Docker using the official script
+    sudo apt install -y uidmap
+    curl -fsSL https://get.docker.com -o get-docker.sh
+    sudo sh get-docker.sh
+    dockerd-rootless-setuptool.sh install
+    \rm get-docker.sh
+
+  else
+    # Docker is installed: check if it's usable without sudo
+    if ! docker info > /dev/null 2>&1; then
+      echo "❌ Docker is installed but not usable without sudo. Please configure rootless Docker."
+      exit 1
+    else
+      echo "✅ Docker is already installed and usable without sudo."
+    fi
   fi
+
 else
   echo "Skipping system setup (non-interactive or no sudo access)."
 fi
 
-source "$HOME/.cargo/env"
-
 # Create the directory tig_pool_test and navigate to it
-mkdir -p wasms
 mkdir -p logs
 mkdir -p $HOME/.tig/$branch/logs
-
-# Clone the Git repository with the specified branch
-git clone -b $branch https://github.com/tig-pool-nk/tig-monorepo.git
-
-# Navigate to the benchmarker directory and build the project with cargo
-cd tig-monorepo/tig-worker/
-cargo build -p tig-worker --release
 
 # Install the benchmarker
 cd $current_path
