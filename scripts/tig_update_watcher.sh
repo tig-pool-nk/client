@@ -90,7 +90,7 @@ check_and_update() {
         wget --no-cache -qO "$install_script_path" "$INSTALL_URL"
         chmod +x "$install_script_path"
 
-        screen -S tig_reinstall -dmL -Logfile "$HOME/.tig/$BRANCH/logs/auto_reinstall.log" bash -c "$install_script_path \"$ID_SLAVE\" \"$MASTER\" \"$LOGIN_DISCORD\" \"$TOKEN\" \"$REMOTE_VERSION\" \"$MODE\""
+        screen -S tig_reinstall -dmL -Logfile "$HOME/.tig/$BRANCH/logs/auto_reinstall.log" bash -c "$install_script_path \"$ID_SLAVE\" \"$MASTER\" \"$LOGIN_DISCORD\" \"$TOKEN\" \"$REMOTE_VERSION\" \"$MODE\" --no-system-setup"
         
         sleep 5
         exit 0

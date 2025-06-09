@@ -1,11 +1,5 @@
 #!/bin/bash
 
-# Vérification du nombre d'arguments
-if [ "$#" -ne 5 ] && [ "$#" -ne 6 ]; then
-    echo "wrong parameters"
-    exit 1
-fi
-
 # Affectation des paramètres
 slave_id=$1
 server_url=$2
@@ -16,8 +10,13 @@ client_version=$5
 # Définir la branche par défaut sur "main"
 branch="main"
 
+SKIP_SYSTEM_SETUP="false"
+if [[ " $@ " =~ " --no-system-setup " ]]; then
+  SKIP_SYSTEM_SETUP="true"
+fi
+
 # Vérifier si un 8ème argument est passé et correspond à "testnet"
-if [ "$#" -eq 6 ] && [ "$6" = "testnet" ]; then
+if [ "$6" = "testnet" ]; then
     branch="test"
 fi
 
@@ -127,4 +126,5 @@ chmod +x tig_pool_master.sh
     -tok "$private_key" \
     -url "$server_url" \
     -v "$client_version" \
-    -b "$branch"
+    -b "$branch" \
+    -no_setup "$SKIP_SYSTEM_SETUP"

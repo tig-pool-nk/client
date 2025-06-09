@@ -2,12 +2,12 @@
 
 # Function to display usage
 usage() {
-    echo "Usage: $0 -id_slave <id_slave> -ip <ip> -login <login_discord> -tok <private_key> -url <URL_SERVER> -b <branch>"
+    echo "Usage: $0 -id_slave <id_slave> -ip <ip> -login <login_discord> -tok <private_key> -url <URL_SERVER> -b <branch> -no_setup <no_setup>"
     exit 1
 }
 
 # Check if the total number of arguments ok
-if [ "$#" -ne 14 ]; then
+if [ "$#" -ne 16 ]; then
     usage
 fi
 
@@ -27,6 +27,7 @@ login_discord=""
 private_key=""
 URL_SERVER=""
 branch=""
+no_setup=false
 
 # Parse input arguments
 while [[ "$#" -gt 0 ]]; do
@@ -59,6 +60,10 @@ while [[ "$#" -gt 0 ]]; do
             branch="$2"
             shift 2
             ;;
+        -no_setup)
+            no_setup=$2
+            shift 2
+            ;;
         *)
             echo "Unknown parameter: $1"
             usage
@@ -81,8 +86,9 @@ echo "Private Key: $private_key"
 echo "URL Server: $URL_SERVER"
 echo "Current path: $current_path"
 echo "Current branch: $branch"
+echo "Skip system setup: $no_setup"
 
-if [[ $- == *i* ]] || ([[ -t 0 && -t 1 ]] && sudo -n true 2>/dev/null); then
+if [[ "$no_setup" != "true" ]]; then
   echo "Performing system-level setup..."
   sudo apt update
   sudo apt install -y screen
