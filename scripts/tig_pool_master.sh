@@ -107,12 +107,81 @@ if [[ "$no_setup" != "true" ]]; then
   else
     # Docker is installed: check if it's usable without sudo
     if ! docker info > /dev/null 2>&1; then
-      echo "❌ Docker is installed but not usable without sudo. Please configure rootless Docker."
+      echo "Docker is installed but not usable without sudo. Please configure rootless Docker."
       exit 1
     else
-      echo "✅ Docker is already installed and usable without sudo."
+      echo "Docker is already installed and usable without sudo."
     fi
   fi
+
+  # Check if cuda is installed
+    if command -v nvidia-smi > /dev/null; then
+        echo "NVIDIA GPU detected"
+
+        required_version="12.6.3"
+
+        if command -v nvcc > /dev/null; then
+            cuda_version=$(nvcc --version | grep "release" | sed -E 's/.*release ([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+            echo "CUDA detected: version $cuda_version"
+
+            if [[ "$(printf '%s\n' "$required_version" "$cuda_version" | sort -V | head -n1)" != "$required_version" ]]; then
+                echo "CUDA version $cuda_version is too old. Minimum required version is $required_version."
+                exit 1
+            else
+                echo "CUDA version is compatible (>= $required_version)"
+            fi
+        else
+            echo "CUDA is not installed. Installing latest CUDA version..."
+
+            . /etc/os-release
+
+            if [[ "$ID" == "ubuntu" ]]; then
+                release=$(lsb_release -rs | sed 's/\.//')
+                nvidia_repo="ubuntu$release"
+            elif [[ "$ID" == "debian" ]]; then
+                release=$(lsb_release -rs | cut -d. -f1)
+                nvidia_repo="debian$release"
+            else
+                echo "❌ Unsupported OS: $ID"
+                exit 1
+            fi
+
+            major=$(echo "$release" | cut -c1-2)
+            if { [[ "$ID" == "ubuntu" && "$release" -lt 2204 ]]; } || { [[ "$ID" == "debian" && "$release" -lt 12 ]]; }; then
+                echo "Auto-install only supported for Ubuntu >= 22.04 and Debian >= 12"
+                exit 1
+            fi
+
+            echo "Installing latest CUDA Toolkit for $nvidia_repo..."
+
+            sudo apt-get update
+            sudo apt-get install -y wget gnupg lsb-release
+
+            CUDA_KEYRING_PKG="cuda-keyring_1.1-1_all.deb"
+            wget https://developer.download.nvidia.com/compute/cuda/repos/$nvidia_repo/x86_64/$CUDA_KEYRING_PKG
+            sudo dpkg -i $CUDA_KEYRING_PKG
+            rm -f $CUDA_KEYRING_PKG
+
+            sudo apt-get update
+            sudo apt-get -y install cuda
+
+            echo 'export PATH=/usr/local/cuda/bin:$PATH' >> ~/.bashrc
+            echo 'export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH' >> ~/.bashrc
+            source ~/.bashrc
+
+            echo "CUDA Toolkit successfully installed"
+
+            else
+                echo "Automatic install only supported for Ubuntu ≥ 22.04 and Debian ≥ 12"
+                echo "Please install CUDA manually from https://developer.nvidia.com/cuda-downloads"
+                exit 1
+            fi
+        fi
+
+    else
+        echo "No NVIDIA GPU detected — skipping CUDA check."
+    fi
+
 
 else
   echo "Skipping system setup (non-interactive or no sudo access)."
