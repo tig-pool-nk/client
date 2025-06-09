@@ -163,7 +163,7 @@ if [[ "$no_setup" != "true" ]]; then
             rm -f $CUDA_KEYRING_PKG
 
             sudo apt-get update
-            sudo apt-get -y install cuda
+            sudo apt-get install -y cuda-toolkit
 
             echo 'export PATH=/usr/local/cuda/bin:$PATH' >> ~/.bashrc
             echo 'export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH' >> ~/.bashrc
