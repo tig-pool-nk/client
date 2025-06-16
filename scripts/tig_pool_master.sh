@@ -175,15 +175,47 @@ if [[ "$no_setup" != "true" ]]; then
             echo "CUDA Toolkit successfully installed"
         fi
 
-        curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
-            && curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
-        sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
-        sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+        if ! dpkg -l | grep -q nvidia-container-toolkit; then
+            echo "nvidia-container-toolkit is not installed: starting installation..."
 
-        sudo apt install -y nvidia-container-toolkit
-        nvidia-ctk runtime configure --runtime=docker --config=$HOME/.config/docker/daemon.json
-        sudo nvidia-ctk config --set nvidia-container-cli.no-cgroups --in-place
-        systemctl --user restart docker
+            curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | \
+                sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+
+            curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
+                sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+                sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+
+            sudo apt update
+            sudo apt install -y nvidia-container-toolkit
+        else
+            echo "nvidia-container-toolkit is already installed."
+        fi
+
+        DAEMON_CONFIG="$HOME/.config/docker/daemon.json"
+        NEED_RESTART=0
+        if ! grep -q '"nvidia"' "$DAEMON_CONFIG" 2>/dev/null; then
+            echo "Configuring Docker to use NVIDIA runtime..."
+            nvidia-ctk runtime configure --runtime=docker --config=$DAEMON_CONFIG
+            NEED_RESTART=1
+        else
+            echo "NVIDIA runtime already present in Docker config."
+        fi
+
+        CONFIG_FILE="/etc/nvidia-container-runtime/config.toml"
+        if ! grep -q "^no-cgroups *= *true" "$CONFIG_FILE" 2>/dev/null; then
+            echo "Enabling 'no-cgroups' setting for NVIDIA container runtime..."
+            sudo nvidia-ctk config --set nvidia-container-cli.no-cgroups --in-place
+            NEED_RESTART=1
+        else
+            echo "'no-cgroups' is already enabled."
+        fi
+
+        if [[ "$NEED_RESTART" -eq 1 ]]; then
+            echo "Restarting Docker service..."
+            systemctl --user restart docker
+        else
+            echo "No restart needed. Configuration already correct."
+        fi
 
     else
         echo "No NVIDIA GPU detected — skipping CUDA check."
