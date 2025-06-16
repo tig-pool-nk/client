@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 # Function to display usage
 usage() {
@@ -72,7 +73,9 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 # Ensure variables are not empty
-if [ -z "$id_slave" ] || [ -z "$ip" ] ||  [ -z "$login_discord" ] || [ -z "$private_key" ] || [ -z "$URL_SERVER" ]|| [ -z "$branch" ]; then
+if [ -z "$id_slave" ] || [ -z "$ip" ] ||  [ -z "$login_discord" ] || [ -z "$private_key" ] || [ -z "$URL_SERVER" ] || [ -z "$branch" ] || [ -z "$v" ]; then
+    echo "Missing required parameters"
+    echo "id_slave='$id_slave', ip='$ip', login='$login_discord', tok='$private_key', url='$URL_SERVER', branch='$branch', v='$v'"
     usage
 fi
 
@@ -89,9 +92,11 @@ echo "Current branch: $branch"
 echo "Skip system setup: $no_setup"
 
 if [[ "$no_setup" != "true" ]]; then
-  echo "Performing system-level setup..."
-  sudo apt update
-  sudo apt install -y screen
+    echo "Performing system-level setup..."
+    sudo apt update
+    sudo apt install -y screen
+
+    HAS_GPU=0
 
     # Check if Docker is installed
     if ! command -v docker > /dev/null; then
@@ -101,10 +106,16 @@ if [[ "$no_setup" != "true" ]]; then
         sudo apt install -y uidmap curl
         curl -fsSL https://get.docker.com -o get-docker.sh
         sudo sh get-docker.sh
+
+        if ! command -v dockerd-rootless-setuptool.sh >/dev/null; then
+            echo "❌ dockerd-rootless-setuptool.sh not found in PATH. You may need to relogin or set up the environment manually."
+            exit 1
+        fi
+
         dockerd-rootless-setuptool.sh install
         \rm get-docker.sh
 
-        else
+    else
         # Docker is installed: check if it's usable without sudo
         if ! docker info > /dev/null 2>&1; then
             echo "Docker is installed but not usable without sudo. Please configure rootless Docker."
@@ -117,6 +128,7 @@ if [[ "$no_setup" != "true" ]]; then
     # Check if cuda is installed
     if command -v nvidia-smi > /dev/null; then
         echo "NVIDIA GPU detected"
+        HAS_GPU=1
 
         required_version="12.6.3"
 
@@ -195,6 +207,8 @@ if [[ "$no_setup" != "true" ]]; then
         NEED_RESTART=0
         if ! grep -q '"nvidia"' "$DAEMON_CONFIG" 2>/dev/null; then
             echo "Configuring Docker to use NVIDIA runtime..."
+            mkdir -p "$(dirname "$DAEMON_CONFIG")"
+            touch "$DAEMON_CONFIG"
             nvidia-ctk runtime configure --runtime=docker --config=$DAEMON_CONFIG
             NEED_RESTART=1
         else
@@ -212,13 +226,35 @@ if [[ "$no_setup" != "true" ]]; then
 
         if [[ "$NEED_RESTART" -eq 1 ]]; then
             echo "Restarting Docker service..."
-            systemctl --user restart docker
+            if systemctl --user status docker &> /dev/null; then
+                systemctl --user restart docker
+            else
+                sudo systemctl restart docker
+            fi
         else
             echo "No restart needed. Configuration already correct."
         fi
 
     else
         echo "No NVIDIA GPU detected — skipping CUDA check."
+    fi
+
+    if [[ "$HAS_GPU" -eq 1 ]]; then
+        echo "Testing NVIDIA runtime with Docker..."
+        if docker run --rm --runtime=nvidia nvidia/cuda:12.2.0-base-ubuntu20.04 nvidia-smi; then
+            echo "✅ NVIDIA runtime test passed."
+        else
+            echo "❌ NVIDIA runtime test with Docker failed."
+            exit 1
+        fi
+    else
+        echo "Testing Docker with a lightweight container..."
+        if docker run --rm hello-world > /dev/null; then
+            echo "✅ Docker is working properly."
+        else
+            echo "❌ Docker test failed."
+            exit 1
+        fi
     fi
 
 
@@ -238,23 +274,9 @@ mkdir -p bin
 cd bin
 
 # Download the files and check if the download was successful
-wget --no-cache https://github.com/tig-pool-nk/client/raw/refs/heads/$branch/bin/client -O client_tig_pool
-if [ $? -ne 0 ]; then
-    echo "Error downloading client_tig_pool"
-    exit 1
-fi
-
-wget https://github.com/tig-pool-nk/client/raw/refs/heads/$branch/bin/slave -O slave
-if [ $? -ne 0 ]; then
-    echo "Error downloading slave"
-    exit 1
-fi
-
-wget https://github.com/tig-pool-nk/client/raw/refs/heads/$branch/bin/bench -O bench
-if [ $? -ne 0 ]; then
-    echo "Error downloading bench"
-    exit 1
-fi
+wget --no-cache https://github.com/tig-pool-nk/client/raw/refs/heads/$branch/bin/client -O client_tig_pool || { echo "Error downloading client_tig_pool binary"; exit 1; }
+wget https://github.com/tig-pool-nk/client/raw/refs/heads/$branch/bin/slave -O slave || { echo "Error downloading slave binary"; exit 1; }
+wget https://github.com/tig-pool-nk/client/raw/refs/heads/$branch/bin/bench -O bench || { echo "Error downloading bench binary"; exit 1; }
 
 # Grant execution permissions to both files
 chmod +x client_tig_pool
@@ -264,10 +286,10 @@ chmod +x slave
 cd $current_path
 
 # Download the launch file and rename it according to the provided parameters
-wget --no-cache -O pool_tig_launch_${id_slave}.sh https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/scripts/pool_tig_launch_master.sh
+wget --no-cache -O pool_tig_launch_${id_slave}.sh https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/scripts/pool_tig_launch_master.sh || { echo "Error downloading pool_tig_launch_master script"; exit 1; }
 
 # Download updater script
-wget --no-cache -O tig_update_watcher.sh https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/scripts/tig_update_watcher.sh
+wget --no-cache -O tig_update_watcher.sh https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/scripts/tig_update_watcher.sh || { echo "Error downloading tig_update_watcher script"; exit 1; }
 chmod +x tig_update_watcher.sh
 
 # Replace placeholders with variable values
