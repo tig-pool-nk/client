@@ -7,6 +7,7 @@ token_private="@tok@"
 version="@version@"
 branch="@branch@"
 
+no_gpu="false"
 gpu_workers=""
 cpu_workers=0
 
@@ -38,6 +39,10 @@ while [[ $# -gt 0 ]]; do
         --cpu_workers)
             cpu_workers="$2"
             shift
+            shift
+            ;;
+        --no_gpu)
+            no_gpu="true"
             shift
             ;;
         *)
@@ -111,4 +116,5 @@ fi
   --version "$version" \
   --branch "$branch" \
   --cpu_workers "$cpu_workers" \
-  --gpu_workers "$gpu_workers"
+  --gpu_workers "$gpu_workers" \
+  --no_gpu "$no_gpu"
