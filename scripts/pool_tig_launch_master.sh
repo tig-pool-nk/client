@@ -7,6 +7,9 @@ token_private="@tok@"
 version="@version@"
 branch="@branch@"
 
+gpu_workers=""
+cpu_workers=0
+
 # TIG Server
 ip="@ip@"
 
@@ -22,6 +25,27 @@ client_file="bin/client_tig_pool"
 # Relative paths to check
 path_env="$path_tig/venv"
 update_watcher="$path_tig/tig_update_watcher.sh"
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    key="$1"
+    case $key in
+        --gpu_workers)
+            gpu_workers="$2"
+            shift
+            shift
+            ;;
+        --cpu_workers)
+            cpu_workers="$2"
+            shift
+            shift
+            ;;
+        *)
+            echo "Unknown argument: $1"
+            exit 1
+            ;;
+    esac
+done
 
 # Kill old processes
 MAX_ATTEMPTS=20
@@ -64,12 +88,11 @@ for ((attempt=1; attempt<=MAX_ATTEMPTS; attempt++)); do
 
     if [[ "$attempt" -eq "$MAX_ATTEMPTS" ]]; then
         echo "ERROR: TIG miner is still running after $MAX_ATTEMPTS attempts (ports 50800 or 50801 are still in use)."
-        return
+        exit 1
     fi
 
     sleep 1
 done
-
 
 # Launch the update watcher in screen if not already running
 if ! screen -list | grep -q "tig_updater"; then
@@ -86,4 +109,6 @@ fi
   --ip "$ip" \
   --url "$url" \
   --version "$version" \
-  --branch "$branch"
+  --branch "$branch" \
+  --cpu_workers "$cpu_workers" \
+  --gpu_workers "$gpu_workers"
