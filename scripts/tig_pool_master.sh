@@ -12,13 +12,6 @@ if [ "$#" -ne 16 ]; then
     usage
 fi
 
-# Check the number of processor threads
-cpu_threads=$(grep -c ^processor /proc/cpuinfo)
-if [ "$cpu_threads" -lt 24 ]; then
-    echo "Your system has less than 24 threads ($cpu_threads detected). Installation aborted. You are not able to mine on TIGPool."
-    exit 1
-fi
-
 
 # Initialize variables for parameters
 id_slave=""
