@@ -68,6 +68,14 @@ install_docker() {
         echo "✅ Docker is already installed."
     fi
 
+    if [ -S /run/docker.sock ]; then
+        sudo chmod 666 /run/docker.sock
+    fi
+
+    if [ -S /var/run/docker.sock ]; then
+        sudo chmod 666 /var/run/docker.sock
+    fi
+
     echo "🔹 Adding current user to docker group..."
     if ! getent group docker >/dev/null; then
         sudo groupadd docker
@@ -168,7 +176,7 @@ setup_nvidia_cuda() {
         fi
 
         echo "🔹 Configuring Docker for NVIDIA runtime..."
-        nvidia-ctk runtime configure --runtime=docker
+        sudo nvidia-ctk runtime configure --runtime=docker
         sudo systemctl restart docker
 
         echo "🔹 Testing NVIDIA Docker runtime..."
