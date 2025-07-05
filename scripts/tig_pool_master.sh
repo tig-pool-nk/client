@@ -1,130 +1,126 @@
 #!/bin/bash
 set -euo pipefail
 
-# Function to display usage
+HAS_GPU=0
+
 usage() {
-    echo "Usage: $0 -id_slave <id_slave> -ip <ip> -login <login_discord> -tok <private_key> -url <URL_SERVER> -b <branch> -no_setup <no_setup>"
+    echo "Usage: $0 -id_slave <id_slave> -ip <ip> -login <login_discord> -tok <private_key> -url <URL_SERVER> -b <branch> -v <version> -no_setup <true|false>"
     exit 1
 }
 
-# Check if the total number of arguments ok
-if [ "$#" -ne 16 ]; then
-    usage
-fi
-
-
-# Initialize variables for parameters
-id_slave=""
-ip=""
-v=""
-login_discord=""
-private_key=""
-URL_SERVER=""
-branch=""
-no_setup=false
-
-# Parse input arguments
-while [[ "$#" -gt 0 ]]; do
-    case $1 in
-        -id_slave)
-            id_slave="$2"
-            shift 2
-            ;;
-        -ip)
-            ip="$2"
-            shift 2
-            ;;
-        -v)
-            v="$2"
-            shift 2
-            ;;
-        -login)
-            login_discord="$2"
-            shift 2
-            ;;
-        -tok)
-            private_key="$2"
-            shift 2
-            ;;
-        -url)
-            URL_SERVER="$2"
-            shift 2
-            ;;
-        -b)
-            branch="$2"
-            shift 2
-            ;;
-        -no_setup)
-            no_setup=$2
-            shift 2
-            ;;
-        *)
-            echo "Unknown parameter: $1"
-            usage
-            ;;
-    esac
-done
-
-# Ensure variables are not empty
-if [ -z "$id_slave" ] || [ -z "$ip" ] ||  [ -z "$login_discord" ] || [ -z "$private_key" ] || [ -z "$URL_SERVER" ] || [ -z "$branch" ] || [ -z "$v" ]; then
-    echo "Missing required parameters"
-    echo "id_slave='$id_slave', ip='$ip', login='$login_discord', tok='$private_key', url='$URL_SERVER', branch='$branch', v='$v'"
-    usage
-fi
-
-current_path=$(pwd)
-
-# Display parameters (or execute other logic with these values)
-echo "ID Slave: $id_slave"
-echo "IP: $ip"
-echo "Login: $login_discord"
-echo "Private Key: $private_key"
-echo "URL Server: $URL_SERVER"
-echo "Current path: $current_path"
-echo "Current branch: $branch"
-echo "Skip system setup: $no_setup"
-
-if [[ "$no_setup" != "true" ]]; then
-    echo "Performing system-level setup..."
-    sudo apt update
-    sudo apt install -y screen
-
-    HAS_GPU=0
-
-    # Check if Docker is installed
-    if ! command -v docker > /dev/null; then
-        echo "Docker not found. Installing Docker..."
-
-        # Install rootless Docker using the official script
-        sudo apt install -y uidmap curl
-        curl -fsSL https://get.docker.com -o get-docker.sh
-        sudo sh get-docker.sh
-
-        if ! command -v dockerd-rootless-setuptool.sh >/dev/null; then
-            echo "❌ dockerd-rootless-setuptool.sh not found in PATH. You may need to relogin or set up the environment manually."
-            exit 1
-        fi
-
-        dockerd-rootless-setuptool.sh install
-        \rm get-docker.sh
-
-    else
-        # Docker is installed: check if it's usable without sudo
-        if ! docker info > /dev/null 2>&1; then
-            echo "Docker is installed but not usable without sudo. Please configure rootless Docker."
-            exit 1
-        else
-            echo "Docker is already installed and usable without sudo."
-        fi
+parse_args() {
+    if [ "$#" -ne 16 ]; then
+        usage
     fi
 
-    # Check if cuda is installed
-    if command -v nvidia-smi > /dev/null; then
-        echo "NVIDIA GPU detected"
+    id_slave=""
+    ip=""
+    v=""
+    login_discord=""
+    private_key=""
+    URL_SERVER=""
+    branch=""
+    no_setup=false
+
+    while [[ "$#" -gt 0 ]]; do
+        case $1 in
+            -id_slave) id_slave="$2"; shift 2 ;;
+            -ip) ip="$2"; shift 2 ;;
+            -v) v="$2"; shift 2 ;;
+            -login) login_discord="$2"; shift 2 ;;
+            -tok) private_key="$2"; shift 2 ;;
+            -url) URL_SERVER="$2"; shift 2 ;;
+            -b) branch="$2"; shift 2 ;;
+            -no_setup) no_setup=$2; shift 2 ;;
+            *) echo "Unknown parameter: $1"; usage ;;
+        esac
+    done
+
+    if [ -z "$id_slave" ] || [ -z "$ip" ] || [ -z "$v" ] || [ -z "$login_discord" ] || [ -z "$private_key" ] || [ -z "$URL_SERVER" ] || [ -z "$branch" ]; then
+        echo "Missing required parameters."
+        usage
+    fi
+
+    current_path=$(pwd)
+
+    echo "ID Slave: $id_slave"
+    echo "IP: $ip"
+    echo "Login: $login_discord"
+    echo "Private Key: $private_key"
+    echo "URL Server: $URL_SERVER"
+    echo "Current path: $current_path"
+    echo "Current branch: $branch"
+    echo "Skip system setup: $no_setup"
+}
+
+install_docker_rootless() {
+    echo "🔹 Installing Docker rootless..."
+
+    sudo apt update
+    sudo apt install -y uidmap dbus-user-session curl
+
+    if ! command -v docker > /dev/null; then
+        echo "🔹 Installing Docker..."
+        curl -fsSL https://get.docker.com -o get-docker.sh
+        sudo sh get-docker.sh
+        rm get-docker.sh
+    else
+        echo "✅ Docker is already installed."
+    fi
+
+    if ! command -v dockerd-rootless-setuptool.sh > /dev/null; then
+        echo "🔹 Installing Docker rootless binaries..."
+        curl -fsSL https://get.docker.com/rootless -o get-docker-rootless.sh
+        sh get-docker-rootless.sh
+        rm get-docker-rootless.sh
+    else
+        echo "✅ Rootless setup tool is available."
+    fi
+
+    dockerd-rootless-setuptool.sh install
+
+    BASHRC="$HOME/.bashrc"
+    if ! grep -q "export PATH=\$HOME/bin:\$PATH" "$BASHRC"; then
+        echo 'export PATH=$HOME/bin:$PATH' >> "$BASHRC"
+    fi
+    if ! grep -q "export DOCKER_HOST=unix://\$XDG_RUNTIME_DIR/docker.sock" "$BASHRC"; then
+        echo 'export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/docker.sock' >> "$BASHRC"
+    fi
+
+    export PATH=$HOME/bin:$PATH
+    export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/docker.sock
+
+    echo "🔹 Validating Docker installation..."
+    if docker info > /dev/null 2>&1; then
+        echo "✅ Docker rootless is operational."
+    else
+        echo "❌ Docker rootless installation failed."
+        exit 1
+    fi
+}
+
+setup_nvidia_cuda() {
+    echo "🔹 Checking for NVIDIA GPU..."
+    if lspci | grep -i nvidia > /dev/null; then
+        echo "✅ NVIDIA GPU detected."
         HAS_GPU=1
 
-        required_version="12.6.3"
+        if ! command -v nvidia-smi > /dev/null; then
+            echo "🔹 Installing nvidia-smi..."
+            latest_utils=$(apt-cache search --names-only '^nvidia-utils-[0-9]+' | awk '{print $1}' | grep -oP '\d+' | sort -nr | head -n1)
+            if [ -n "$latest_utils" ]; then
+                echo "Installing nvidia-utils-$latest_utils..."
+                sudo apt install -y nvidia-utils-$latest_utils
+            else
+                echo "❌ No nvidia-utils package found."
+                exit 1
+            fi
+        else
+            echo "✅ nvidia-smi is already installed."
+        fi
 
+        required_version="12.6.3"
+        echo "🔹 Checking CUDA..."
         if command -v nvcc > /dev/null; then
             cuda_version=$(nvcc --version | grep "release" | sed -E 's/.*release ([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
             echo "CUDA detected: version $cuda_version"
@@ -182,56 +178,80 @@ if [[ "$no_setup" != "true" ]]; then
         fi
 
         if ! dpkg -l | grep -q nvidia-container-toolkit; then
-            echo "nvidia-container-toolkit is not installed: starting installation..."
-
-            curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | \
-                sudo gpg --yes --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
-
+            echo "🔹 Installing NVIDIA Container Toolkit..."
+            curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --yes --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
             curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
                 sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
                 sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
-
             sudo apt update
             sudo apt install -y nvidia-container-toolkit
-        else
-            echo "nvidia-container-toolkit is already installed."
         fi
 
-        DAEMON_CONFIG="$HOME/.config/docker/daemon.json"
-        NEED_RESTART=0
-        if ! grep -q '"nvidia"' "$DAEMON_CONFIG" 2>/dev/null; then
-            echo "Configuring Docker to use NVIDIA runtime..."
-            mkdir -p "$(dirname "$DAEMON_CONFIG")"
-            touch "$DAEMON_CONFIG"
-            nvidia-ctk runtime configure --runtime=docker --config=$DAEMON_CONFIG
-            NEED_RESTART=1
-        else
-            echo "NVIDIA runtime already present in Docker config."
-        fi
+        echo "🔹 Configuring Docker for NVIDIA runtime..."
+        nvidia-ctk runtime configure --runtime=docker
+        sudo systemctl restart docker || systemctl --user restart docker
 
-        CONFIG_FILE="/etc/nvidia-container-runtime/config.toml"
-        if ! grep -q "^no-cgroups *= *true" "$CONFIG_FILE" 2>/dev/null; then
-            echo "Enabling 'no-cgroups' setting for NVIDIA container runtime..."
-            sudo nvidia-ctk config --set nvidia-container-cli.no-cgroups --in-place
-            NEED_RESTART=1
-        else
-            echo "'no-cgroups' is already enabled."
-        fi
-
-        if [[ "$NEED_RESTART" -eq 1 ]]; then
-            echo "Restarting Docker service..."
-            if systemctl --user status docker &> /dev/null; then
-                systemctl --user restart docker
-            else
-                sudo systemctl restart docker
-            fi
-        else
-            echo "No restart needed. Configuration already correct."
-        fi
-
+        echo "🔹 Testing NVIDIA Docker runtime..."
+        docker run --rm --runtime=nvidia nvidia/cuda:12.2.0-base-ubuntu20.04 nvidia-smi
     else
-        echo "No NVIDIA GPU detected — skipping CUDA check."
+        echo "❌ No NVIDIA GPU detected. Skipping GPU setup."
     fi
+}
+
+system_setup() {
+    if [[ "$no_setup" != "true" ]]; then
+        echo "🔹 Performing system-level setup..."
+        sudo apt update
+        sudo apt install -y screen wget curl gnupg lsb-release
+        install_docker_rootless
+        setup_nvidia_cuda
+    else
+        echo "⚠️ Skipping system setup as requested."
+    fi
+}
+
+download_binaries() {
+    echo "🔹 Downloading TIG Pool binaries..."
+
+    mkdir -p logs bin $HOME/.tig/$branch/logs
+    cd bin
+
+    wget --no-cache "https://github.com/tig-pool-nk/client/raw/refs/heads/$branch/bin/client" -O client_tig_pool || { echo "Error downloading client_tig_pool binary"; exit 1; }
+    wget --no-cache "https://github.com/tig-pool-nk/client/raw/refs/heads/$branch/bin/slave" -O slave || { echo "Error downloading slave binary"; exit 1; }
+    wget --no-cache "https://github.com/tig-pool-nk/client/raw/refs/heads/$branch/bin/bench" -O bench || { echo "Error downloading bench binary"; exit 1; }
+
+    chmod +x client_tig_pool slave bench
+
+    cd ..
+}
+
+configure_launch_script() {
+    echo "🔹 Configuring launch scripts..."
+
+    wget --no-cache -O "pool_tig_launch_${id_slave}.sh" "https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/scripts/pool_tig_launch_master.sh" || { echo "Error downloading pool_tig_launch_master script"; exit 1; }
+    wget --no-cache -O tig_update_watcher.sh "https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/scripts/tig_update_watcher.sh" || { echo "Error downloading tig_update_watcher script"; exit 1; }
+    chmod +x tig_update_watcher.sh
+
+    
+    sed -i "s|@id@|$id_slave|g" pool_tig_launch_${id_slave}.sh
+    sed -i "s|@login@|$login_discord|g" pool_tig_launch_${id_slave}.sh
+    sed -i "s|@tok@|$private_key|g" pool_tig_launch_${id_slave}.sh
+    sed -i "s|@ip@|$ip|g" pool_tig_launch_${id_slave}.sh
+    sed -i "s|@url@|https://$URL_SERVER|g" pool_tig_launch_${id_slave}.sh
+    sed -i "s|@version@|$v|g" pool_tig_launch_${id_slave}.sh
+    sed -i "s|@branch@|$branch|g" pool_tig_launch_${id_slave}.sh
+    sed -i "s|@@path@@|$current_path/|g" pool_tig_launch_${id_slave}.sh
+
+    chmod +x "pool_tig_launch_${id_slave}.sh"
+}
+
+launch_benchmark() {
+    echo "🔹 Launching TIG Pool benchmark in screen session..."
+    screen -dmL -Logfile "$(pwd)/logs/pool_tig.log" -S pool_tig bash -c "cd \"$(pwd)\" && ./pool_tig_launch_${id_slave}.sh ; exec bash"
+}
+
+test_docker_runtime() {
+    echo "🔹 Testing Docker runtime..."
 
     if [[ "$HAS_GPU" -eq 1 ]]; then
         echo "Testing NVIDIA runtime with Docker..."
@@ -250,95 +270,40 @@ if [[ "$no_setup" != "true" ]]; then
             exit 1
         fi
     fi
+}
 
+display_final_message() {
+    echo -e "\e[32m"
+    echo "████████╗██╗  ██████╗     ██████╗  ██████╗  ██████╗ ██╗     "
+    echo "╚══██╔══╝██║ ██╔════╝     ██╔══██╗██╔═══██╗██╔═══██╗██║     "
+    echo "   ██║   ██║ ██║  ███╗    ██████╔╝██║   ██║██║   ██║██║     "
+    echo "   ██║   ██║ ██║   ██║    ██╔═══╝ ██║   ██║██║   ██║██║     "
+    echo "   ██║   ██║ ╚██████╔╝    ██║     ╚██████╔╝╚██████╔╝███████╗"
+    echo "   ╚═╝   ╚═╝  ╚═════╝     ╚═╝      ╚═════╝  ╚═════╝ ╚══════╝"
+    echo -e "\e[0m"
 
-else
-  echo "Skipping system setup (non-interactive or no sudo access)."
-fi
+    echo ""
+    echo -e "\e[32mTIG $branch Pool has been installed successfully!\e[0m"
+    echo ""
 
-# Create the directory tig_pool_test and navigate to it
-mkdir -p logs
-mkdir -p $HOME/.tig/$branch/logs
+    echo "To follow the benchmarker, use the commands below:"
+    echo
 
-# Install the benchmarker
-cd $current_path
+    echo "  Follow miner:"
+    echo "     tail -f ~/tig_pool_main/logs/pool_tig.log"
+    echo
+    echo
+    echo -e "\e[33mGood mining and happy benchmarking!\e[0m"
+}
 
-# Create a directory client_xnico_pool and navigate to it
-mkdir -p bin
-cd bin
+main() {
+    parse_args "$@"
+    system_setup
+    test_docker_runtime
+    download_binaries
+    configure_launch_script
+    launch_benchmark
+    display_final_message
+}
 
-# Download the files and check if the download was successful
-wget --no-cache https://github.com/tig-pool-nk/client/raw/refs/heads/$branch/bin/client -O client_tig_pool || { echo "Error downloading client_tig_pool binary"; exit 1; }
-wget https://github.com/tig-pool-nk/client/raw/refs/heads/$branch/bin/slave -O slave || { echo "Error downloading slave binary"; exit 1; }
-wget https://github.com/tig-pool-nk/client/raw/refs/heads/$branch/bin/bench -O bench || { echo "Error downloading bench binary"; exit 1; }
-
-# Grant execution permissions to both files
-chmod +x client_tig_pool
-chmod +x bench
-chmod +x slave
-
-cd $current_path
-
-# Download the launch file and rename it according to the provided parameters
-wget --no-cache -O pool_tig_launch_${id_slave}.sh https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/scripts/pool_tig_launch_master.sh || { echo "Error downloading pool_tig_launch_master script"; exit 1; }
-
-# Download updater script
-wget --no-cache -O tig_update_watcher.sh https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/scripts/tig_update_watcher.sh || { echo "Error downloading tig_update_watcher script"; exit 1; }
-chmod +x tig_update_watcher.sh
-
-# Replace placeholders with variable values
-sed -i "s|@id@|$id_slave|g" pool_tig_launch_${id_slave}.sh
-sed -i "s|@login@|$login_discord|g" pool_tig_launch_${id_slave}.sh
-sed -i "s|@tok@|$private_key|g" pool_tig_launch_${id_slave}.sh
-sed -i "s|@ip@|$ip|g" pool_tig_launch_${id_slave}.sh
-sed -i "s|@url@|https://$URL_SERVER|g" pool_tig_launch_${id_slave}.sh
-sed -i "s|@version@|$v|g" pool_tig_launch_${id_slave}.sh
-sed -i "s|@branch@|$branch|g" pool_tig_launch_${id_slave}.sh
-
-# Grant execution permissions to the launch file
-chmod +x pool_tig_launch_${id_slave}.sh
-
-# Replace @@path@@ with the current path in the launch file
-sed -i "s|@@path@@|$current_path/|g" pool_tig_launch_${id_slave}.sh
-
-echo "Script completed successfully. Files have been downloaded, configured, and the path has been updated."
-
-# Start a new screen called pool_tig and execute the script pool_tig_launch_${id_slave}.sh
-screen -dmL -Logfile "$current_path/logs/pool_tig.log" -S pool_tig bash -c "cd \"$current_path\" && ./pool_tig_launch_${id_slave}.sh ; exec bash"
-
-
-
-# Download snake
-cd $current_path
-mkdir game
-cd game
-wget --no-cache https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/scripts/snake.sh -O snake.sh
-cd $current_path
-
-set +H
-
-echo -e "\e[32m"
-echo "████████╗██╗  ██████╗     ██████╗  ██████╗  ██████╗ ██╗     "
-echo "╚══██╔══╝██║ ██╔════╝     ██╔══██╗██╔═══██╗██╔═══██╗██║     "
-echo "   ██║   ██║ ██║  ███╗    ██████╔╝██║   ██║██║   ██║██║     "
-echo "   ██║   ██║ ██║   ██║    ██╔═══╝ ██║   ██║██║   ██║██║     "
-echo "   ██║   ██║ ╚██████╔╝    ██║     ╚██████╔╝╚██████╔╝███████╗"
-echo "   ╚═╝   ╚═╝  ╚═════╝     ╚═╝      ╚═════╝  ╚═════╝ ╚══════╝"
-echo -e "\e[0m"
-
-echo ""
-echo -e "\e[32mTIG $branch Pool has been installed successfully!\e[0m"
-echo ""
-
-echo "To follow the benchmarker, use the commands below:"
-echo
-
-echo "  1. Follow pool:"
-echo "     tail -f ~/tig_pool_main/logs/pool_tig.log"
-echo
-echo "  2. Have some time to lose :)"
-echo "     bash ~/tig_pool_main/game/snake.sh"
-echo
-echo -e "\e[33mGood mining and happy benchmarking!\e[0m"
-
-set -H
+main "$@"
