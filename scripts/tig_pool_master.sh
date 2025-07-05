@@ -70,18 +70,9 @@ install_docker() {
     fi
 
     echo "🔹 Adding current user to docker group..."
+    sudo groupadd docker
     sudo usermod -aG docker $USER
-
-    echo "🔹 Applying new group permissions immediately using 'newgrp docker'..."
-    cmd=("$0")
-    for arg in "$@"; do
-        cmd+=("$arg")
-    done
-
-    echo $cmd
-
-    sg docker "${cmd[@]}"
-    exit 0
+    newgrp docker
 }
 
 
