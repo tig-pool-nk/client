@@ -9,7 +9,8 @@ usage() {
 }
 
 parse_args() {
-    if [ "$#" -ne 14 ] && [ "$#" -ne 16 ]; then
+    echo "$#"
+    if [ "$#" -ne 16 ]; then
         usage
     fi
 
