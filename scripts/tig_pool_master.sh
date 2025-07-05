@@ -179,8 +179,8 @@ setup_nvidia_cuda() {
 
         echo "🔹 Configuring Docker for NVIDIA runtime..."
         sudo nvidia-ctk runtime configure --runtime=docker
-        sudo sed -i 's/^no-cgroups *= *.*/no-cgroups = false/' /etc/nvidia-container-runtime/config.toml
         sudo systemctl restart docker
+        sudo sed -i 's/^no-cgroups *= *.*/no-cgroups = false/' /etc/nvidia-container-runtime/config.toml
 
         echo "🔹 Testing NVIDIA Docker runtime..."
         docker run --rm --runtime=nvidia nvidia/cuda:12.2.0-base-ubuntu20.04 nvidia-smi
