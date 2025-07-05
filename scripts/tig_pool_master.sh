@@ -84,6 +84,8 @@ install_docker() {
         sudo usermod -aG docker $USER
         sg docker -c "echo 'Group changed to docker'"
     fi
+
+    docker run --rm hello-world
 }
 
 
@@ -177,6 +179,7 @@ setup_nvidia_cuda() {
 
         echo "🔹 Configuring Docker for NVIDIA runtime..."
         sudo nvidia-ctk runtime configure --runtime=docker
+        sudo sed -i 's/^no-cgroups *= *.*/no-cgroups = false/' /etc/nvidia-container-runtime/config.toml
         sudo systemctl restart docker
 
         echo "🔹 Testing NVIDIA Docker runtime..."
