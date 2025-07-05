@@ -69,7 +69,9 @@ install_docker() {
     fi
 
     echo "🔹 Adding current user to docker group..."
-    sudo groupadd docker
+    if ! getent group docker >/dev/null; then
+        sudo groupadd docker
+    fi
     sudo usermod -aG docker $USER
     sg docker -c "echo 'Group changed to docker'"
 }
