@@ -53,8 +53,8 @@ parse_args() {
     echo "Skip system setup: $no_setup"
 }
 
-install_docker_rootless() {
-    echo "🔹 Installing Docker rootless..."
+install_docker() {
+    echo "🔹 Installing Docker..."
 
     sudo apt update
     sudo apt install -y uidmap dbus-user-session curl
@@ -68,36 +68,13 @@ install_docker_rootless() {
         echo "✅ Docker is already installed."
     fi
 
-    if ! command -v dockerd-rootless-setuptool.sh > /dev/null; then
-        echo "🔹 Installing Docker rootless binaries..."
-        curl -fsSL https://get.docker.com/rootless -o get-docker-rootless.sh
-        sh get-docker-rootless.sh
-        rm get-docker-rootless.sh
-    else
-        echo "✅ Rootless setup tool is available."
-    fi
+    echo "🔹 Adding current user to docker group..."
+    sudo usermod -aG docker $USER
 
-    dockerd-rootless-setuptool.sh install
-
-    BASHRC="$HOME/.bashrc"
-    if ! grep -q "export PATH=\$HOME/bin:\$PATH" "$BASHRC"; then
-        echo 'export PATH=$HOME/bin:$PATH' >> "$BASHRC"
-    fi
-    if ! grep -q "export DOCKER_HOST=unix://\$XDG_RUNTIME_DIR/docker.sock" "$BASHRC"; then
-        echo 'export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/docker.sock' >> "$BASHRC"
-    fi
-
-    export PATH=$HOME/bin:$PATH
-    export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/docker.sock
-
-    echo "🔹 Validating Docker installation..."
-    if docker info > /dev/null 2>&1; then
-        echo "✅ Docker rootless is operational."
-    else
-        echo "❌ Docker rootless installation failed."
-        exit 1
-    fi
+    echo "🔹 Applying new group permissions immediately using 'newgrp docker'..."
+    exec sg docker "$0 $*"
 }
+
 
 setup_nvidia_cuda() {
     echo "🔹 Checking for NVIDIA GPU..."
@@ -203,7 +180,7 @@ system_setup() {
         echo "🔹 Performing system-level setup..."
         sudo apt update
         sudo apt install -y screen wget curl gnupg lsb-release
-        install_docker_rootless
+        install_docker
         setup_nvidia_cuda
     else
         echo "⚠️ Skipping system setup as requested."
