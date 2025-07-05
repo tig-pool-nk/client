@@ -9,7 +9,6 @@ usage() {
 }
 
 parse_args() {
-    echo "$#"
     if [ "$#" -ne 16 ]; then
         usage
     fi
@@ -72,7 +71,7 @@ install_docker() {
     echo "🔹 Adding current user to docker group..."
     sudo groupadd docker
     sudo usermod -aG docker $USER
-    newgrp docker
+    sg docker -c "echo 'Group changed to docker'"
 }
 
 
