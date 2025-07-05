@@ -73,7 +73,13 @@ install_docker() {
     sudo usermod -aG docker $USER
 
     echo "🔹 Applying new group permissions immediately using 'newgrp docker'..."
-    exec sg docker "$0" "$@"
+    args=""
+    for arg in "$@"; do
+        args="$args \"${arg//\"/\\\"}\""
+    done
+
+    sg docker "bash -c '$0 $args'"
+    exit 0
 }
 
 
