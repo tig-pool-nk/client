@@ -78,6 +78,8 @@ install_docker() {
         args="$args \"${arg//\"/\\\"}\""
     done
 
+    echo $args
+
     sg docker "bash -c '$0 $args'"
     exit 0
 }
