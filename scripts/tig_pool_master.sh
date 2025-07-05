@@ -72,8 +72,10 @@ install_docker() {
     if ! getent group docker >/dev/null; then
         sudo groupadd docker
     fi
-    sudo usermod -aG docker $USER
-    sg docker -c "echo 'Group changed to docker'"
+    if ! groups $USER | grep -q '\bdocker\b'; then
+        sudo usermod -aG docker $USER
+        sg docker -c "echo 'Group changed to docker'"
+    fi
 }
 
 
@@ -167,7 +169,7 @@ setup_nvidia_cuda() {
 
         echo "🔹 Configuring Docker for NVIDIA runtime..."
         nvidia-ctk runtime configure --runtime=docker
-        sudo systemctl restart docker || systemctl --user restart docker
+        sudo systemctl restart docker
 
         echo "🔹 Testing NVIDIA Docker runtime..."
         docker run --rm --runtime=nvidia nvidia/cuda:12.2.0-base-ubuntu20.04 nvidia-smi
