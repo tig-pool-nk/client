@@ -121,11 +121,10 @@ setup_nvidia_cuda() {
         required_version="12.6.3"
         echo "🔹 Checking CUDA..."
         if command -v nvcc > /dev/null; then
-            cuda_version=$(nvcc --version | grep "release" | sed -E 's/.*release ([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+            cuda_version=$(nvcc --version | grep "release" | sed 's/.*release //' | sed 's/,.*//')
             echo "CUDA detected: version $cuda_version"
-
             if [[ "$(printf '%s\n' "$required_version" "$cuda_version" | sort -V | head -n1)" != "$required_version" ]]; then
-                echo "CUDA version $cuda_version is too old. Minimum required version is $required_version."
+                echo "❌ CUDA version $cuda_version is too old. Minimum required version is $required_version: please upgrade manually"
                 exit 1
             else
                 echo "CUDA version is compatible (>= $required_version)"
