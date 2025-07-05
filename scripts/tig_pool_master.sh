@@ -88,6 +88,23 @@ install_docker() {
     docker run --rm hello-world
 }
 
+install_nvidia_drivers() {
+    if ! command -v nvidia-smi > /dev/null; then
+        echo "🔹 Installing NVIDIA drivers..."
+        sudo apt update
+        sudo apt install -y ubuntu-drivers-common
+        recommended_drivers=$(ubuntu-drivers devices | grep recommended | awk '{print $3}')
+        if [ -n "$recommended_drivers" ]; then
+            echo "🔹 Installing recommended NVIDIA drivers: $recommended_drivers"
+            sudo apt install -y $recommended_drivers
+        fi
+        echo "🔹 You need to reboot your system to load NVIDIA drivers, then restart setup script..."
+        exit 1
+    else
+        echo "✅ NVIDIA drivers are already installed."
+    fi
+}
+
 
 setup_nvidia_cuda() {
     echo "🔹 Checking for NVIDIA GPU..."
@@ -95,18 +112,10 @@ setup_nvidia_cuda() {
         echo "✅ NVIDIA GPU detected."
         HAS_GPU=1
 
+        install_nvidia_drivers
         if ! command -v nvidia-smi > /dev/null; then
-            echo "🔹 Installing nvidia-smi..."
-            latest_utils=$(apt-cache search --names-only '^nvidia-utils-[0-9]+' | awk '{print $1}' | grep -oP '\d+' | sort -nr | head -n1)
-            if [ -n "$latest_utils" ]; then
-                echo "Installing nvidia-utils-$latest_utils..."
-                sudo apt install -y nvidia-utils-$latest_utils
-            else
-                echo "❌ No nvidia-utils package found."
-                exit 1
-            fi
-        else
-            echo "✅ nvidia-smi is already installed."
+            echo "❌ NVIDIA drivers installation failed or system needs reboot."
+            exit 1
         fi
 
         required_version="12.6.3"
