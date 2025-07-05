@@ -9,7 +9,7 @@ usage() {
 }
 
 parse_args() {
-    if [ "$#" -ne 16 ]; then
+    if [ "$#" -ne 14 ] && [ "$#" -ne 16 ]; then
         usage
     fi
 
