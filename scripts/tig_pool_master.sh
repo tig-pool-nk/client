@@ -298,9 +298,9 @@ display_final_message() {
 main() {
     parse_args "$@"
     system_setup
-    test_docker_runtime
     download_binaries
     configure_launch_script
+    test_docker_runtime
     launch_benchmark
     display_final_message
 }

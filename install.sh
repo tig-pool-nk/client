@@ -115,7 +115,10 @@ done
 # Télécharger et exécuter le script mis à jour
 script_url="https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/scripts/tig_pool_master.sh"
 echo "Downloading script from: $script_url"
-sudo apt install wget
+if ! command -v wget > /dev/null; then
+    echo "wget is not installed. Please install it first."
+    exit 1
+fi
 
 wget --no-cache "$script_url"
 if [ $? -ne 0 ]; then
