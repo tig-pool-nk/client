@@ -118,16 +118,28 @@ setup_nvidia_cuda() {
             exit 1
         fi
 
-        required_version="12.6.3"
+        echo "🔹 Checking NVIDIA driver version..."
+        driver_version=$(nvidia-smi --query-gpu=driver_version --format=csv,noheader | head -n1 | cut -d'.' -f1)
+        required_driver_version=525
+        echo "NVIDIA driver detected: version $driver_version"
+        if [ "$driver_version" -lt "$required_driver_version" ]; then
+            echo "❌ NVIDIA driver version $driver_version is too old. Minimum required version is $required_driver_version. Please upgrade manually."
+            exit 1
+        else
+            echo "NVIDIA driver version is compatible (>= $required_driver_version)"
+        fi
+
+
+        required_cuda_version="12.6.3"
         echo "🔹 Checking CUDA..."
         if command -v nvcc > /dev/null; then
             cuda_version=$(nvcc --version | grep "release" | sed 's/.*release //' | sed 's/,.*//')
             echo "CUDA detected: version $cuda_version"
-            if [[ "$(printf '%s\n' "$required_version" "$cuda_version" | sort -V | head -n1)" != "$required_version" ]]; then
-                echo "❌ CUDA version $cuda_version is too old. Minimum required version is $required_version: please upgrade manually"
+            if [[ "$(printf '%s\n' "$required_cuda_version" "$cuda_version" | sort -V | head -n1)" != "$required_cuda_version" ]]; then
+                echo "❌ CUDA version $cuda_version is too old. Minimum required version is $required_cuda_version: please upgrade manually"
                 exit 1
             else
-                echo "CUDA version is compatible (>= $required_version)"
+                echo "CUDA version is compatible (>= $required_cuda_version)"
             fi
         else
             echo "CUDA is not installed. Installing latest CUDA version..."
