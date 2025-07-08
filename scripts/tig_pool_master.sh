@@ -120,7 +120,7 @@ setup_nvidia_cuda() {
 
         echo "🔹 Checking NVIDIA driver version..."
         driver_version=$(nvidia-smi --query-gpu=driver_version --format=csv,noheader | head -n1 | cut -d'.' -f1)
-        required_driver_version=525
+        required_driver_version=560
         echo "NVIDIA driver detected: version $driver_version"
         if [ "$driver_version" -lt "$required_driver_version" ]; then
             echo "❌ NVIDIA driver version $driver_version is too old. Minimum required version is $required_driver_version. Please upgrade manually."
