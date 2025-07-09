@@ -130,9 +130,28 @@ setup_nvidia_cuda() {
         fi
 
 
-        required_cuda_version="12.6.3"
         echo "🔹 Checking CUDA..."
-        if command -v nvcc > /dev/null; then
+
+        required_cuda_version="12.6.3"
+        nvcc_path=""
+
+        if [ -x /usr/local/cuda/bin/nvcc ]; then
+            echo "Found nvcc in /usr/local/cuda/bin"
+            cuda_version=$(/usr/local/cuda/bin/nvcc --version | grep "release" | sed 's/.*release //' | sed 's/,.*//')
+            echo "CUDA detected in /usr/local/cuda: version $cuda_version"
+            if [[ "$(printf '%s\n' "$required_cuda_version" "$cuda_version" | sort -V | head -n1)" == "$required_cuda_version" ]]; then
+                echo "CUDA version in /usr/local/cuda is compatible (>= $required_cuda_version). Setting PATH and LD_LIBRARY_PATH..."
+                echo 'export PATH=/usr/local/cuda/bin:$PATH' >> ~/.bashrc
+                echo 'export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH' >> ~/.bashrc
+                export PATH=/usr/local/cuda/bin:$PATH
+                export LD_LIBRARY_PATH=/usr/local/cuda/lib64:${LD_LIBRARY_PATH:-}
+                nvcc_path="/usr/local/cuda/bin/nvcc"
+            else
+                echo "❌ CUDA version $cuda_version in /usr/local/cuda is too old. Ignoring and checking system nvcc."
+            fi
+        fi
+
+        if [ -z "$nvcc_path" ] && command -v nvcc > /dev/null; then
             cuda_version=$(nvcc --version | grep "release" | sed 's/.*release //' | sed 's/,.*//')
             echo "CUDA detected: version $cuda_version"
             if [[ "$(printf '%s\n' "$required_cuda_version" "$cuda_version" | sort -V | head -n1)" != "$required_cuda_version" ]]; then
@@ -140,8 +159,11 @@ setup_nvidia_cuda() {
                 exit 1
             else
                 echo "CUDA version is compatible (>= $required_cuda_version)"
+                nvcc_path="nvcc"
             fi
-        else
+        fi
+
+        if [ -z "$nvcc_path" ] ; then
             echo "CUDA is not installed. Installing latest CUDA version..."
 
             . /etc/os-release
