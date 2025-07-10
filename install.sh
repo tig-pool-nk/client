@@ -66,7 +66,11 @@ echo "Hive Mode: $HIVE_MODE"
 
 # Suppression et recréation du répertoire
 mkdir -p $HOME/.tig/$branch
-rm -rf "tig_pool_$branch"
+if [[ "$HIVE_MODE" == "true" ]]; then
+    sudo rm -rf "tig_pool_$branch"
+else
+    rm -rf "tig_pool_$branch"
+fi
 mkdir "tig_pool_$branch"
 cd "tig_pool_$branch" || exit 1
 
