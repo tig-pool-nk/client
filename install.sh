@@ -43,13 +43,6 @@ echo "Client Version: $client_version"
 echo "Branch: $branch"
 echo "Hive Mode: $HIVE_MODE"
 
-# Si mode hive, relancer le script en tant qu'utilisateur 'user' dans /home/user
-if [[ "$HIVE_MODE" == "true" ]] && [[ "$(whoami)" == "root" ]]; then
-    echo "Hive mode - restarting as user 'user' in /home/user"
-    cd /home/user
-    exec su user -c "cd /home/user && bash $0 $*"
-fi
-
 mkdir -p $HOME/.tig/$branch
 if [[ "$HIVE_MODE" == "true" ]]; then
     sudo rm -rf "tig_pool_$branch"
