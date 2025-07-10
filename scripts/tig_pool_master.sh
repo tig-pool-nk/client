@@ -64,6 +64,8 @@ hive_setup() {
         echo "🔹 Updating iptables alternatives..."
         sudo update-alternatives --set iptables /usr/sbin/iptables-legacy
         sudo update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy
+
+
         
   
     fi
@@ -78,7 +80,7 @@ install_docker() {
     if ! command -v docker > /dev/null; then
         echo "🔹 Installing Docker..."
         curl -fsSL https://get.docker.com -o get-docker.sh
-        sudo sh get-docker.sh
+        sudo sh get-docker.sh -- --allow-downgrades
         rm get-docker.sh
     else
         echo "✅ Docker is already installed."
