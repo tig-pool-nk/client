@@ -62,8 +62,8 @@ hive_setup() {
         
         # Update iptables alternatives
         echo "🔹 Updating iptables alternatives..."
-        sudo update-alternatives --set iptables /usr/sbin/iptables-nft
-        sudo update-alternatives --set ip6tables /usr/sbin/ip6tables-nft
+        sudo update-alternatives --set iptables /usr/sbin/iptables-legacy
+        sudo update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy
         
   
     fi
