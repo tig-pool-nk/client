@@ -1,10 +1,5 @@
 #!/bin/bash
-
-# Vérification du nombre d'arguments
-if [ "$#" -ne 5 ] && [ "$#" -ne 6 ]; then
-    echo "wrong parameters"
-    exit 1
-fi
+set -euo pipefail
 
 # Affectation des paramètres
 slave_id=$1
@@ -14,11 +9,21 @@ private_key=$4
 client_version=$5
 
 # Définir la branche par défaut sur "main"
+MODE="mainnet"
 branch="main"
 
+SKIP_SYSTEM_SETUP="false"
+for arg in "$@"; do
+    if [[ "$arg" == "--no-system-setup" ]]; then
+        SKIP_SYSTEM_SETUP="true"
+        break
+    fi
+done
+
 # Vérifier si un 8ème argument est passé et correspond à "testnet"
-if [ "$#" -eq 6 ] && [ "$6" = "testnet" ]; then
+if [ -n "${6:-}" ] && [ "$6" = "testnet" ]; then
     branch="test"
+    MODE="testnet"
 fi
 
 if [ -z "$branch" ]; then
@@ -49,7 +54,7 @@ MASTER=$server_url
 LOGIN_DISCORD=$login
 TOKEN=$private_key
 BRANCH=$branch
-MODE=$6
+MODE=$MODE
 INSTALL_URL=$install_url
 EOF
 
@@ -64,8 +69,8 @@ PORTS=(50800 50801)
 for ((attempt=1; attempt<=MAX_ATTEMPTS; attempt++)); do
     echo "Attempt $attempt to clean up processes..."
 
-    ps aux | grep -i pool_tig_launch | awk '{print $2}' | xargs kill -9 2>/dev/null || true
-    ps aux | grep -i tig_update_watcher | awk '{print $2}' | xargs kill -9 2>/dev/null || true
+    pgrep -f pool_tig_launch | xargs kill -9 2>/dev/null || true
+    pgrep -f tig_update_watcher | xargs kill -9 2>/dev/null || true
     
     if [[ -d "bin" ]]; then
         for p in $(ls bin); do
@@ -101,7 +106,7 @@ for ((attempt=1; attempt<=MAX_ATTEMPTS; attempt++)); do
 
     if [[ "$attempt" -eq "$MAX_ATTEMPTS" ]]; then
         echo "ERROR: TIG miner is still running after $MAX_ATTEMPTS attempts (ports 50800 or 50801 are still in use)."
-        return
+        exit 1
     fi
 
     sleep 1
@@ -110,6 +115,10 @@ done
 # Télécharger et exécuter le script mis à jour
 script_url="https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/scripts/tig_pool_master.sh"
 echo "Downloading script from: $script_url"
+if ! command -v wget > /dev/null; then
+    echo "wget is not installed. Please install it first."
+    exit 1
+fi
 
 wget --no-cache "$script_url"
 if [ $? -ne 0 ]; then
@@ -127,4 +136,5 @@ chmod +x tig_pool_master.sh
     -tok "$private_key" \
     -url "$server_url" \
     -v "$client_version" \
-    -b "$branch"
+    -b "$branch" \
+    -no_setup "$SKIP_SYSTEM_SETUP"

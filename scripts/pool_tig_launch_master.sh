@@ -7,6 +7,10 @@ token_private="@tok@"
 version="@version@"
 branch="@branch@"
 
+no_gpu="false"
+gpu_workers=""
+cpu_workers=0
+
 # TIG Server
 ip="@ip@"
 
@@ -21,20 +25,32 @@ client_file="bin/client_tig_pool"
 
 # Relative paths to check
 path_env="$path_tig/venv"
-worker_path="$path_tig/tig-monorepo/target/release/tig-worker"
 update_watcher="$path_tig/tig_update_watcher.sh"
 
-
-echo "Launching TIG miner $id_slave..."
-
-# Check if the worker file exists
-if [ ! -f "$worker_path" ]; then
-    echo "The tig-worker file does not exist at $worker_path. Please build it before proceeding."
-    echo "To build it, run:"
-    echo "cd $path_tig/tig-monorepo && cargo build --release"
-    exit 1
-fi
-
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    key="$1"
+    case $key in
+        --gpu_workers)
+            gpu_workers="$2"
+            shift
+            shift
+            ;;
+        --cpu_workers)
+            cpu_workers="$2"
+            shift
+            shift
+            ;;
+        --no_gpu)
+            no_gpu="true"
+            shift
+            ;;
+        *)
+            echo "Unknown argument: $1"
+            exit 1
+            ;;
+    esac
+done
 
 # Kill old processes
 MAX_ATTEMPTS=20
@@ -77,12 +93,11 @@ for ((attempt=1; attempt<=MAX_ATTEMPTS; attempt++)); do
 
     if [[ "$attempt" -eq "$MAX_ATTEMPTS" ]]; then
         echo "ERROR: TIG miner is still running after $MAX_ATTEMPTS attempts (ports 50800 or 50801 are still in use)."
-        return
+        exit 1
     fi
 
     sleep 1
 done
-
 
 # Launch the update watcher in screen if not already running
 if ! screen -list | grep -q "tig_updater"; then
@@ -98,4 +113,8 @@ fi
   --token_private "$token_private" \
   --ip "$ip" \
   --url "$url" \
-  --version "$version"
+  --version "$version" \
+  --branch "$branch" \
+  --cpu_workers "$cpu_workers" \
+  --gpu_workers "$gpu_workers" \
+  --no_gpu "$no_gpu"
