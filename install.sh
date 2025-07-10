@@ -16,6 +16,21 @@ branch="main"
 SKIP_SYSTEM_SETUP="false"
 HIVE_MODE="false"
 
+# Détection automatique de HiveOS
+detect_hiveos() {
+    # Vérifier si on est sur HiveOS en cherchant le fichier de configuration spécifique
+    if [[ -f "/hive-config/rig.conf" ]]; then
+        return 0  # HiveOS détecté
+    fi
+    return 1  # Pas HiveOS
+}
+
+# Détection automatique de HiveOS
+if detect_hiveos; then
+    HIVE_MODE="true"
+    echo "HiveOS automatically detected!"
+fi
+
 for arg in "$@"; do
     if [[ "$arg" == "--no-system-setup" ]]; then
         SKIP_SYSTEM_SETUP="true"

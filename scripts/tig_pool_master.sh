@@ -65,18 +65,7 @@ hive_setup() {
         sudo update-alternatives --set iptables /usr/sbin/iptables-nft
         sudo update-alternatives --set ip6tables /usr/sbin/ip6tables-nft
         
-        # HiveOS specific NVIDIA driver update
-        echo "🔹 Updating NVIDIA drivers for HiveOS..."
-        sudo nvidia-driver-update https://us.download.nvidia.com/XFree86/Linux-x86_64/575.51.02/NVIDIA-Linux-x86_64-575.51.02.run
-        
-        # HiveOS specific CUDA installation
-        echo "🔹 Installing CUDA toolkit for HiveOS..."
-        wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb && \
-        dpkg -i cuda-keyring_1.1-1_all.deb && \
-        apt-get update -y && \
-        apt-get install cuda-toolkit-12-9 -y
-        
-        echo "✅ HiveOS setup completed."
+  
     fi
 }
 
