@@ -67,7 +67,7 @@ hive_setup() {
         
         # HiveOS specific NVIDIA driver update
         echo "🔹 Updating NVIDIA drivers for HiveOS..."
-        nvidia-driver-update https://us.download.nvidia.com/XFree86/Linux-x86_64/575.51.02/NVIDIA-Linux-x86_64-575.51.02.run
+        sudo nvidia-driver-update https://us.download.nvidia.com/XFree86/Linux-x86_64/575.51.02/NVIDIA-Linux-x86_64-575.51.02.run
         
         # HiveOS specific CUDA installation
         echo "🔹 Installing CUDA toolkit for HiveOS..."
