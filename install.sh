@@ -24,11 +24,24 @@ for arg in "$@"; do
     fi
 done
 
-# Si mode hive et qu'on est root, passer en user
-if [[ "$HIVE_MODE" == "true" ]] && [[ "$EUID" -eq 0 ]]; then
-    echo "Hive mode detected - switching to user and going to /home/user"
-    cd /home/user
-
+# Si mode hive, vérifier qu'on est en tant qu'utilisateur user et dans /home/user
+if [[ "$HIVE_MODE" == "true" ]]; then
+    if [[ "$EUID" -eq 0 ]]; then
+        echo "ERROR: For HiveOS mode, please run this script as user 'user', not as root."
+        echo "Please run: su user"
+        echo "Then go to: cd /home/user"
+        echo "Then run the script again."
+        exit 1
+    fi
+    
+    if [[ "$PWD" != "/home/user" ]]; then
+        echo "ERROR: For HiveOS mode, please run this script from /home/user directory."
+        echo "Please run: cd /home/user"
+        echo "Then run the script again."
+        exit 1
+    fi
+    
+    echo "HiveOS mode detected - running as user in /home/user"
 fi
 
 # Vérifier si un 8ème argument est passé et correspond à "testnet"
