@@ -2,6 +2,34 @@
 #!/bin/bash
 set -euo pipefail
 
+# Fonction pour vérifier l'espace disque disponible
+check_disk_space() {
+    echo "🔹 Checking available disk space..."
+    
+    # Obtenir l'espace disponible en MB
+    available_space_mb=$(df . | tail -1 | awk '{print $4}')
+    
+    # Convertir en GB (approximatif)
+    available_space_gb=$((available_space_mb / 1024))
+    
+    echo "Available disk space: ${available_space_gb} GB"
+    
+    # Vérifier si moins de 1 GB disponible
+    if [ "$available_space_gb" -lt 1 ]; then
+        echo "⚠️  WARNING: Not enough disk space available!"
+        echo "❌ ERROR: Only ${available_space_gb} GB available. Minimum required: 1 GB"
+        echo "Please free up disk space before running the installation."
+        exit 1
+    fi
+    
+    if [ "$available_space_gb" -lt 2 ]; then
+        echo "⚠️  WARNING: Low disk space detected (${available_space_gb} GB available)"
+        echo "💡 Recommended: At least 2 GB for optimal performance"
+    fi
+    
+    echo "✅ Disk space check passed"
+}
+
 # Affectation des paramètres
 slave_id=$1
 server_url=$2
@@ -30,6 +58,9 @@ if detect_hiveos; then
     HIVE_MODE="true"
     echo "HiveOS automatically detected!"
 fi
+
+# Vérification de l'espace disque disponible
+check_disk_space
 
 for arg in "$@"; do
     if [[ "$arg" == "--no-system-setup" ]]; then
