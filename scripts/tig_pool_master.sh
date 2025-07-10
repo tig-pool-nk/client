@@ -60,10 +60,6 @@ hive_setup() {
     if [[ "$hive" == "true" ]]; then
         echo "🔹 Performing HiveOS setup..."
         
-        # Switch to user and go to home directory
-        echo "🔹 Switching to user and changing to /home/user..."
-        cd /home/user
-        
         # Update iptables alternatives
         echo "🔹 Updating iptables alternatives..."
         sudo update-alternatives --set iptables /usr/sbin/iptables-nft
