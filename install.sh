@@ -44,7 +44,6 @@ echo "Branch: $branch"
 echo "Hive Mode: $HIVE_MODE"
 
 if [[ "$HIVE_MODE" == "true" ]]; then
-    echo "Mode Hive - changement vers utilisateur 'user' et répertoire /home/user"
     su user
     cd /home/user
 fi
