@@ -18,7 +18,7 @@ HIVE_MODE="false"
 for arg in "$@"; do
     if [[ "$arg" == "--no-system-setup" ]]; then
         SKIP_SYSTEM_SETUP="true"
-    elif [[ "$arg" == "--hive" ]]; then
+    elif [[ "$arg" == "hive" ]]; then
         HIVE_MODE="true"
     fi
 done
