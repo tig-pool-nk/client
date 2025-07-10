@@ -28,8 +28,14 @@ done
 if [[ "$HIVE_MODE" == "true" ]] && [[ "$EUID" -eq 0 ]]; then
     echo "Hive mode detected - switching to user and going to /home/user"
     cd /home/user
+    
+    # Télécharger le script dans un fichier temporaire
+    TEMP_SCRIPT="/tmp/install_hive_$$.sh"
+    wget --no-cache -qO "$TEMP_SCRIPT" "https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/test/install.sh"
+    chmod +x "$TEMP_SCRIPT"
+    
     # Relancer le script en tant qu'utilisateur user
-    exec su user -c "cd /home/user && bash $(realpath $0) $*"
+    exec su user -c "cd /home/user && bash $TEMP_SCRIPT $*"
 fi
 
 # Vérifier si un 8ème argument est passé et correspond à "testnet"
