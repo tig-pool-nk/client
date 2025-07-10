@@ -80,7 +80,7 @@ install_docker() {
     if ! command -v docker > /dev/null; then
         echo "🔹 Installing Docker..."
         curl -fsSL https://get.docker.com -o get-docker.sh
-        sudo sh get-docker.sh -- --allow-downgrades
+        sudo sh get-docker.sh
         rm get-docker.sh
     else
         echo "✅ Docker is already installed."
