@@ -1,5 +1,34 @@
+
 #!/bin/bash
 set -euo pipefail
+
+# Fonction pour vérifier l'espace disque disponible
+check_disk_space() {
+    echo "🔹 Checking available disk space..."
+    
+    # Obtenir l'espace disponible en MB
+    available_space_mb=$(df . | tail -1 | awk '{print $4}')
+    
+    # Convertir en GB (approximatif)
+    available_space_gb=$((available_space_mb / 1024))
+    
+    echo "Available disk space: ${available_space_gb} GB"
+    
+    # Vérifier si moins de 1 GB disponible
+    if [ "$available_space_gb" -lt 1 ]; then
+        echo "⚠️  WARNING: Not enough disk space available!"
+        echo "❌ ERROR: Only ${available_space_gb} GB available. Minimum required: 1 GB"
+        echo "Please free up disk space before running the installation."
+        exit 1
+    fi
+    
+    if [ "$available_space_gb" -lt 2 ]; then
+        echo "⚠️  WARNING: Low disk space detected (${available_space_gb} GB available)"
+        echo "💡 Recommended: At least 2 GB for optimal performance"
+    fi
+    
+    echo "✅ Disk space check passed"
+}
 
 # Affectation des paramètres
 slave_id=$1
@@ -13,12 +42,53 @@ MODE="mainnet"
 branch="main"
 
 SKIP_SYSTEM_SETUP="false"
+HIVE_MODE="false"
+
+# Détection automatique de HiveOS
+detect_hiveos() {
+    # Vérifier si on est sur HiveOS en cherchant le fichier de configuration spécifique
+    if [[ -f "/hive-config/rig.conf" ]]; then
+        return 0  # HiveOS détecté
+    fi
+    return 1  # Pas HiveOS
+}
+
+# Détection automatique de HiveOS
+if detect_hiveos; then
+    HIVE_MODE="true"
+    echo "HiveOS automatically detected!"
+fi
+
+# Vérification de l'espace disque disponible
+check_disk_space
+
 for arg in "$@"; do
     if [[ "$arg" == "--no-system-setup" ]]; then
         SKIP_SYSTEM_SETUP="true"
-        break
+    elif [[ "$arg" == "hive" ]]; then
+        HIVE_MODE="true"
     fi
 done
+
+# Si mode hive, vérifier qu'on est en tant qu'utilisateur user et dans /home/user
+if [[ "$HIVE_MODE" == "true" ]]; then
+    if [[ "$EUID" -eq 0 ]]; then
+        echo "ERROR: For HiveOS mode, please run this script as user 'user', not as root."
+        echo "Please run: su user"
+        echo "Then go to: cd /home/user"
+        echo "Then run the script again."
+        exit 1
+    fi
+    
+    if [[ "$PWD" != "/home/user" ]]; then
+        echo "ERROR: For HiveOS mode, please run this script from /home/user directory."
+        echo "Please run: cd /home/user"
+        echo "Then run the script again."
+        exit 1
+    fi
+    
+    echo "HiveOS mode detected - running as user in /home/user"
+fi
 
 # Vérifier si un 8ème argument est passé et correspond à "testnet"
 if [ -n "${6:-}" ] && [ "$6" = "testnet" ]; then
@@ -38,10 +108,15 @@ echo "Login: $login"
 echo "Private Key: $private_key"
 echo "Client Version: $client_version"
 echo "Branch: $branch"
+echo "Hive Mode: $HIVE_MODE"
 
 # Suppression et recréation du répertoire
 mkdir -p $HOME/.tig/$branch
-rm -rf "tig_pool_$branch"
+if [[ "$HIVE_MODE" == "true" ]]; then
+    sudo rm -rf "tig_pool_$branch"
+else
+    rm -rf "tig_pool_$branch"
+fi
 mkdir "tig_pool_$branch"
 cd "tig_pool_$branch" || exit 1
 
@@ -129,12 +204,25 @@ fi
 chmod +x tig_pool_master.sh
 
 # Exécuter le script téléchargé avec les paramètres appropriés
-./tig_pool_master.sh \
-    -id_slave "$slave_id" \
-    -ip "$server_url" \
-    -login "$login" \
-    -tok "$private_key" \
-    -url "$server_url" \
-    -v "$client_version" \
-    -b "$branch" \
-    -no_setup "$SKIP_SYSTEM_SETUP"
+if [[ "$HIVE_MODE" == "true" ]]; then
+    ./tig_pool_master.sh \
+        -id_slave "$slave_id" \
+        -ip "$server_url" \
+        -login "$login" \
+        -tok "$private_key" \
+        -url "$server_url" \
+        -v "$client_version" \
+        -b "$branch" \
+        -no_setup "$SKIP_SYSTEM_SETUP" \
+        -hive "true"
+else
+    ./tig_pool_master.sh \
+        -id_slave "$slave_id" \
+        -ip "$server_url" \
+        -login "$login" \
+        -tok "$private_key" \
+        -url "$server_url" \
+        -v "$client_version" \
+        -b "$branch" \
+        -no_setup "$SKIP_SYSTEM_SETUP"
+fi

@@ -4,12 +4,12 @@ set -euo pipefail
 HAS_GPU=0
 
 usage() {
-    echo "Usage: $0 -id_slave <id_slave> -ip <ip> -login <login_discord> -tok <private_key> -url <URL_SERVER> -b <branch> -v <version> -no_setup <true|false>"
+    echo "Usage: $0 -id_slave <id_slave> -ip <ip> -login <login_discord> -tok <private_key> -url <URL_SERVER> -b <branch> -v <version> -no_setup <true|false> [-hive <true|false>]"
     exit 1
 }
 
 parse_args() {
-    if [ "$#" -ne 16 ]; then
+    if [ "$#" -lt 16 ]; then
         usage
     fi
 
@@ -21,6 +21,7 @@ parse_args() {
     URL_SERVER=""
     branch=""
     no_setup=false
+    hive=false
 
     while [[ "$#" -gt 0 ]]; do
         case $1 in
@@ -32,6 +33,7 @@ parse_args() {
             -url) URL_SERVER="$2"; shift 2 ;;
             -b) branch="$2"; shift 2 ;;
             -no_setup) no_setup=$2; shift 2 ;;
+            -hive) hive=$2; shift 2 ;;
             *) echo "Unknown parameter: $1"; usage ;;
         esac
     done
@@ -51,6 +53,22 @@ parse_args() {
     echo "Current path: $current_path"
     echo "Current branch: $branch"
     echo "Skip system setup: $no_setup"
+    echo "Hive mode: $hive"
+}
+
+hive_setup() {
+    if [[ "$hive" == "true" ]]; then
+        echo "🔹 Performing HiveOS setup..."
+        
+        # Update iptables alternatives
+        echo "🔹 Updating iptables alternatives..."
+        sudo update-alternatives --set iptables /usr/sbin/iptables-legacy
+        sudo update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy
+
+
+        
+  
+    fi
 }
 
 install_docker() {
@@ -68,6 +86,27 @@ install_docker() {
         echo "✅ Docker is already installed."
     fi
 
+    # Démarrer le service Docker s'il n'est pas en cours d'exécution
+    if ! systemctl is-active --quiet docker; then
+        echo "🔹 Starting Docker service..."
+        sudo systemctl start docker
+        sudo systemctl enable docker
+    fi
+
+    # Attendre que le socket soit disponible
+    timeout=30
+    while [ $timeout -gt 0 ] && [ ! -S /var/run/docker.sock ]; do
+        echo "⏳ Waiting for Docker socket..."
+        sleep 1
+        timeout=$((timeout - 1))
+    done
+
+    if [ ! -S /var/run/docker.sock ]; then
+        echo "❌ Docker socket not found after waiting. Trying to restart Docker..."
+        sudo systemctl restart docker
+        sleep 5
+    fi
+
     if [ -S /run/docker.sock ]; then
         sudo chmod 666 /run/docker.sock
     fi
@@ -82,10 +121,25 @@ install_docker() {
     fi
     if ! groups $USER | grep -q '\bdocker\b'; then
         sudo usermod -aG docker $USER
+        echo "⚠️  User added to docker group. You may need to log out and log back in for group changes to take effect."
+        # Utiliser newgrp pour appliquer les changements de groupe dans la session actuelle
         sg docker -c "echo 'Group changed to docker'"
     fi
 
-    docker run --rm hello-world
+    # Test avec gestion d'erreur plus robuste
+    echo "🔹 Testing Docker installation..."
+    if ! docker run --rm hello-world 2>/dev/null; then
+        echo "⚠️  Docker test failed. Trying with sudo..."
+        if sudo docker run --rm hello-world; then
+            echo "✅ Docker works with sudo. Permission issue detected."
+            echo "💡 You may need to restart your session or run: newgrp docker"
+        else
+            echo "❌ Docker test failed even with sudo. Please check Docker installation."
+            exit 1
+        fi
+    else
+        echo "✅ Docker is working properly."
+    fi
 }
 
 install_nvidia_drivers() {
@@ -331,6 +385,7 @@ display_final_message() {
 
 main() {
     parse_args "$@"
+    hive_setup
     system_setup
     download_binaries
     configure_launch_script
