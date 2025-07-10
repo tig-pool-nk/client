@@ -43,7 +43,12 @@ echo "Client Version: $client_version"
 echo "Branch: $branch"
 echo "Hive Mode: $HIVE_MODE"
 
-# Suppression et recréation du répertoire
+if [[ "$HIVE_MODE" == "true" ]]; then
+    echo "Mode Hive - changement vers utilisateur 'user' et répertoire /home/user"
+    su user
+    cd /home/user
+fi
+
 mkdir -p $HOME/.tig/$branch
 if [[ "$HIVE_MODE" == "true" ]]; then
     sudo rm -rf "tig_pool_$branch"
