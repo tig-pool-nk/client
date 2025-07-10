@@ -1,3 +1,4 @@
+
 #!/bin/bash
 set -euo pipefail
 
@@ -13,13 +14,10 @@ MODE="mainnet"
 branch="main"
 
 SKIP_SYSTEM_SETUP="false"
-HIVE_MODE="false"
-
 for arg in "$@"; do
     if [[ "$arg" == "--no-system-setup" ]]; then
         SKIP_SYSTEM_SETUP="true"
-    elif [[ "$arg" == "hive" ]]; then
-        HIVE_MODE="true"
+        break
     fi
 done
 
@@ -41,20 +39,10 @@ echo "Login: $login"
 echo "Private Key: $private_key"
 echo "Client Version: $client_version"
 echo "Branch: $branch"
-echo "Hive Mode: $HIVE_MODE"
 
-# Si mode hive, aller dans /home/user
-if [[ "$HIVE_MODE" == "true" ]]; then
-    echo "Hive mode - changing to /home/user directory"
-    cd /home/user
-fi
-
+# Suppression et recréation du répertoire
 mkdir -p $HOME/.tig/$branch
-if [[ "$HIVE_MODE" == "true" ]]; then
-    sudo rm -rf "tig_pool_$branch"
-else
-    rm -rf "tig_pool_$branch"
-fi
+rm -rf "tig_pool_$branch"
 mkdir "tig_pool_$branch"
 cd "tig_pool_$branch" || exit 1
 
@@ -142,25 +130,12 @@ fi
 chmod +x tig_pool_master.sh
 
 # Exécuter le script téléchargé avec les paramètres appropriés
-if [[ "$HIVE_MODE" == "true" ]]; then
-    ./tig_pool_master.sh \
-        -id_slave "$slave_id" \
-        -ip "$server_url" \
-        -login "$login" \
-        -tok "$private_key" \
-        -url "$server_url" \
-        -v "$client_version" \
-        -b "$branch" \
-        -no_setup "$SKIP_SYSTEM_SETUP" \
-        -hive "true"
-else
-    ./tig_pool_master.sh \
-        -id_slave "$slave_id" \
-        -ip "$server_url" \
-        -login "$login" \
-        -tok "$private_key" \
-        -url "$server_url" \
-        -v "$client_version" \
-        -b "$branch" \
-        -no_setup "$SKIP_SYSTEM_SETUP"
-fi
+./tig_pool_master.sh \
+    -id_slave "$slave_id" \
+    -ip "$server_url" \
+    -login "$login" \
+    -tok "$private_key" \
+    -url "$server_url" \
+    -v "$client_version" \
+    -b "$branch" \
+    -no_setup "$SKIP_SYSTEM_SETUP"
