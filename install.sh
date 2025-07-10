@@ -43,6 +43,12 @@ echo "Client Version: $client_version"
 echo "Branch: $branch"
 echo "Hive Mode: $HIVE_MODE"
 
+# Si mode hive, aller dans /home/user
+if [[ "$HIVE_MODE" == "true" ]]; then
+    echo "Hive mode - changing to /home/user directory"
+    cd /home/user
+fi
+
 mkdir -p $HOME/.tig/$branch
 if [[ "$HIVE_MODE" == "true" ]]; then
     sudo rm -rf "tig_pool_$branch"
