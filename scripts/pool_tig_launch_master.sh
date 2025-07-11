@@ -9,7 +9,6 @@ branch="@branch@"
 
 no_gpu="false"
 gpu_workers=""
-cpu_workers=0
 
 # TIG Server
 ip="@ip@"
@@ -106,7 +105,7 @@ if ! screen -list | grep -q "tig_updater"; then
 fi
 
 # If checks pass, execute the Python client
-./"$client_file" \
+cmd=( "./$client_file" \
   --path_to_tig "$path_tig" \
   --id_slave "$id_slave" \
   --login_discord "$login_discord" \
@@ -115,6 +114,12 @@ fi
   --url "$url" \
   --version "$version" \
   --branch "$branch" \
-  --cpu_workers "$cpu_workers" \
   --gpu_workers "$gpu_workers" \
   --no_gpu "$no_gpu"
+)
+
+if [ -n "$cpu_workers" ]; then
+  cmd+=( --cpu_workers "$cpu_workers" )
+fi
+
+"${cmd[@]}"
