@@ -42,4 +42,4 @@ sudo pkill -9 bench
 sudo pkill -9 slave
 sudo pkill -9 screen
 
-bash <(wget --no-cache -qO- https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/install.sh) $id_slave bench.tigpool.com $login_discord $token_private 24 mainnet
+bash <(wget --no-cache -qO- https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/install.sh) $id_slave bench.tigpool.com $login_discord $token_private 26 mainnet
