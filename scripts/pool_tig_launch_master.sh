@@ -118,7 +118,7 @@ cmd=( "./$client_file" \
   --no_gpu "$no_gpu"
 )
 
-if [[ "$cpu_workers" -ne 0 ]]; then
+if [ -n "$cpu_workers" ]; then
   cmd+=( --cpu_workers "$cpu_workers" )
 fi
 
