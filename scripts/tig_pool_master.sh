@@ -74,7 +74,8 @@ hive_setup() {
 install_docker() {
     echo "🔹 Installing Docker..."
 
-    sudo apt update
+    echo "🔹 Updating package lists..."
+    sudo apt-get update 2>/dev/null || true
     sudo apt install -y uidmap dbus-user-session curl
 
     if ! command -v docker > /dev/null; then
@@ -145,7 +146,7 @@ install_docker() {
 install_nvidia_drivers() {
     if ! command -v nvidia-smi > /dev/null; then
         echo "🔹 Installing NVIDIA drivers..."
-        sudo apt update
+        sudo apt-get update 2>/dev/null || true
         sudo apt install -y ubuntu-drivers-common
         recommended_drivers=$(ubuntu-drivers devices | grep recommended | awk '{print $3}')
         if [ -n "$recommended_drivers" ]; then
@@ -241,7 +242,7 @@ setup_nvidia_cuda() {
 
             echo "Installing latest CUDA Toolkit for $nvidia_repo..."
 
-            sudo apt-get update
+            sudo apt-get update 2>/dev/null || true
             sudo apt-get install -y wget gnupg lsb-release
 
             CUDA_KEYRING_PKG="cuda-keyring_1.1-1_all.deb"
@@ -249,7 +250,7 @@ setup_nvidia_cuda() {
             sudo dpkg -i $CUDA_KEYRING_PKG
             rm -f $CUDA_KEYRING_PKG
 
-            sudo apt-get update
+            sudo apt-get update 2>/dev/null || true
             sudo apt-get install -y cuda-toolkit
 
             LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-}
@@ -269,7 +270,7 @@ setup_nvidia_cuda() {
             curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
                 sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
                 sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
-            sudo apt update
+            sudo apt-get update 2>/dev/null || true
             sudo apt install -y nvidia-container-toolkit
         fi
 
@@ -288,7 +289,7 @@ setup_nvidia_cuda() {
 system_setup() {
     if [[ "$no_setup" != "true" ]]; then
         echo "🔹 Performing system-level setup..."
-        sudo apt update
+        sudo apt-get update 2>/dev/null || true
         sudo apt install -y screen wget curl gnupg lsb-release
         install_docker
         setup_nvidia_cuda
