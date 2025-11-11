@@ -27,6 +27,7 @@ path_env="$path_tig/venv"
 update_watcher="$path_tig/tig_update_watcher.sh"
 
 # Parse arguments
+max_subbatches="1"
 while [[ $# -gt 0 ]]; do
     key="$1"
     case $key in
@@ -37,6 +38,11 @@ while [[ $# -gt 0 ]]; do
             ;;
         --cpu_workers)
             cpu_workers="$2"
+            shift
+            shift
+            ;;
+        --max_subbatches)
+            max_subbatches="$2"
             shift
             shift
             ;;
@@ -115,7 +121,8 @@ cmd=( "./$client_file" \
   --version "$version" \
   --branch "$branch" \
   --gpu_workers "$gpu_workers" \
-  --no_gpu "$no_gpu"
+  --no_gpu "$no_gpu" \
+  --max_subbatches "$max_subbatches"
 )
 
 if [ -n "$cpu_workers" ]; then
