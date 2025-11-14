@@ -320,7 +320,7 @@ configure_launch_script() {
     wget --no-cache -O tig_update_watcher.sh "https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/scripts/tig_update_watcher.sh" || { echo "Error downloading tig_update_watcher script"; exit 1; }
     chmod +x tig_update_watcher.sh
 
-    
+
     sed -i "s|@id@|$id_slave|g" pool_tig_launch_${id_slave}.sh
     sed -i "s|@login@|$login_discord|g" pool_tig_launch_${id_slave}.sh
     sed -i "s|@tok@|$private_key|g" pool_tig_launch_${id_slave}.sh
@@ -335,7 +335,39 @@ configure_launch_script() {
 
 launch_benchmark() {
     echo "🔹 Launching TIG Pool benchmark in screen session..."
-    screen -dmL -Logfile "$(pwd)/logs/pool_tig.log" -S pool_tig bash -c "cd \"$(pwd)\" && ./pool_tig_launch_${id_slave}.sh ; exec bash"
+
+    # Load runtime parameters from .tig_env if they exist
+    ENV_FILE="$HOME/.tig/$branch/.tig_env"
+    RUNTIME_PARAMS=""
+
+    if [[ -f "$ENV_FILE" ]]; then
+        source "$ENV_FILE"
+
+        # Build runtime parameters string
+        if [[ -n "${GPU_WORKERS:-}" ]]; then
+            RUNTIME_PARAMS="$RUNTIME_PARAMS --gpu_workers \"$GPU_WORKERS\""
+        fi
+
+        if [[ -n "${CPU_WORKERS:-}" ]]; then
+            RUNTIME_PARAMS="$RUNTIME_PARAMS --cpu_workers \"$CPU_WORKERS\""
+        fi
+
+        if [[ -n "${MAX_SUBBATCHES:-}" && "${MAX_SUBBATCHES}" != "1" ]]; then
+            RUNTIME_PARAMS="$RUNTIME_PARAMS --max_subbatches \"$MAX_SUBBATCHES\""
+        fi
+
+        if [[ "${NO_GPU:-false}" == "true" ]]; then
+            RUNTIME_PARAMS="$RUNTIME_PARAMS --no_gpu"
+        fi
+    fi
+
+    # Launch with runtime parameters if any
+    if [[ -n "$RUNTIME_PARAMS" ]]; then
+        echo "🔹 Launching with runtime parameters: $RUNTIME_PARAMS"
+        screen -dmL -Logfile "$(pwd)/logs/pool_tig.log" -S pool_tig bash -c "cd \"$(pwd)\" && ./pool_tig_launch_${id_slave}.sh $RUNTIME_PARAMS ; exec bash"
+    else
+        screen -dmL -Logfile "$(pwd)/logs/pool_tig.log" -S pool_tig bash -c "cd \"$(pwd)\" && ./pool_tig_launch_${id_slave}.sh ; exec bash"
+    fi
 }
 
 test_docker_runtime() {

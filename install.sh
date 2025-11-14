@@ -122,7 +122,25 @@ cd "tig_pool_$branch" || exit 1
 
 # Save parameters
 install_url="https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/install.sh"
-cat > "$HOME/.tig/$branch/.tig_env" <<EOF
+
+# Read existing runtime parameters if they exist
+ENV_FILE="$HOME/.tig/$branch/.tig_env"
+GPU_WORKERS=""
+CPU_WORKERS=""
+MAX_SUBBATCHES="1"
+NO_GPU="false"
+
+if [[ -f "$ENV_FILE" ]]; then
+    source "$ENV_FILE"
+    # Keep existing runtime parameters
+    GPU_WORKERS="${GPU_WORKERS:-}"
+    CPU_WORKERS="${CPU_WORKERS:-}"
+    MAX_SUBBATCHES="${MAX_SUBBATCHES:-1}"
+    NO_GPU="${NO_GPU:-false}"
+fi
+
+# Save all parameters (base + runtime)
+cat > "$ENV_FILE" <<EOF
 TIG_PATH=$PWD
 ID_SLAVE=$slave_id
 MASTER=$server_url
@@ -131,6 +149,10 @@ TOKEN=$private_key
 BRANCH=$branch
 MODE=$MODE
 INSTALL_URL=$install_url
+GPU_WORKERS=$GPU_WORKERS
+CPU_WORKERS=$CPU_WORKERS
+MAX_SUBBATCHES=$MAX_SUBBATCHES
+NO_GPU=$NO_GPU
 EOF
 
 # Save version

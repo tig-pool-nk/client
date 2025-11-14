@@ -7,9 +7,6 @@ token_private="@tok@"
 version="@version@"
 branch="@branch@"
 
-no_gpu="false"
-gpu_workers=""
-
 # TIG Server
 ip="@ip@"
 
@@ -27,7 +24,11 @@ path_env="$path_tig/venv"
 update_watcher="$path_tig/tig_update_watcher.sh"
 
 # Parse arguments
+no_gpu="false"
+gpu_workers=""
+cpu_workers=""
 max_subbatches="1"
+
 while [[ $# -gt 0 ]]; do
     key="$1"
     case $key in
@@ -56,6 +57,29 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+# Save runtime parameters to .tig_env
+ENV_FILE="$HOME/.tig/$branch/.tig_env"
+if [[ -f "$ENV_FILE" ]]; then
+    # Read existing env file
+    source "$ENV_FILE"
+
+    # Update with runtime parameters
+    cat > "$ENV_FILE" <<EOF
+TIG_PATH=$path_tig
+ID_SLAVE=$id_slave
+MASTER=$ip
+LOGIN_DISCORD=$login_discord
+TOKEN=$token_private
+BRANCH=$branch
+MODE=${MODE:-mainnet}
+INSTALL_URL=${INSTALL_URL:-https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/install.sh}
+GPU_WORKERS=$gpu_workers
+CPU_WORKERS=$cpu_workers
+MAX_SUBBATCHES=$max_subbatches
+NO_GPU=$no_gpu
+EOF
+fi
 
 # Kill old processes
 MAX_ATTEMPTS=20
