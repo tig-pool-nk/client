@@ -9,13 +9,54 @@ ENV_FILE="$HOME/.tig/$BRANCH/.tig_env"
 MAX_ATTEMPTS=20
 PORTS=(50800 50801)
 
+launch_benchmark() {
+    echo "🔹 Launching TIG Pool benchmark in screen session..."
+    id_slave=$1
+
+    # Load runtime parameters from .tig_env if they exist
+    ENV_FILE="$HOME/.tig/$BRANCH/.tig_env"
+    RUNTIME_PARAMS=""
+
+    if [[ -f "$ENV_FILE" ]]; then
+        source "$ENV_FILE"
+
+        # Build runtime parameters string
+        if [[ -n "${GPU_WORKERS:-}" ]]; then
+            RUNTIME_PARAMS="$RUNTIME_PARAMS --gpu_workers \"$GPU_WORKERS\""
+        fi
+
+        if [[ -n "${CPU_WORKERS:-}" ]]; then
+            RUNTIME_PARAMS="$RUNTIME_PARAMS --cpu_workers \"$CPU_WORKERS\""
+        fi
+
+        if [[ -n "${MAX_SUBBATCHES:-}" && "${MAX_SUBBATCHES}" != "1" ]]; then
+            RUNTIME_PARAMS="$RUNTIME_PARAMS --max_subbatches \"$MAX_SUBBATCHES\""
+        fi
+
+        if [[ "${NO_GPU:-false}" == "true" ]]; then
+            RUNTIME_PARAMS="$RUNTIME_PARAMS --no_gpu"
+        fi
+    fi
+
+    # Launch with runtime parameters if any
+    if [[ -n "$RUNTIME_PARAMS" ]]; then
+        echo "🔹 Launching with runtime parameters: $RUNTIME_PARAMS"
+        screen -dmL -Logfile "$(pwd)/logs/pool_tig.log" -S pool_tig bash -c "cd \"$(pwd)\" && ./pool_tig_launch_${id_slave}.sh $RUNTIME_PARAMS ; exec bash"
+    else
+        screen -dmL -Logfile "$(pwd)/logs/pool_tig.log" -S pool_tig bash -c "cd \"$(pwd)\" && ./pool_tig_launch_${id_slave}.sh ; exec bash"
+    fi
+}
+
 check_and_update() {
     if [[ ! -f "$ENV_FILE" ]]; then
         echo "[UPDATER] ERROR: Environment file '$ENV_FILE' not found."
         return
     fi
 
-    source "$ENV_FILE"
+    if ! source "$ENV_FILE"; then
+        echo "[UPDATER] ERROR: Cannot source $ENV_FILE"
+        return
+    fi
 
     if [[ -z "$TIG_PATH" || -z "$ID_SLAVE" || -z "$MASTER" || -z "$LOGIN_DISCORD" || -z "$TOKEN" || -z "$MODE" || -z "$INSTALL_URL" ]]; then
         echo "[UPDATER] ERROR: One or more required environment variables are missing in $ENV_FILE"
@@ -48,6 +89,8 @@ check_and_update() {
                     killall "$p" > /dev/null 2>&1 || true
                 done
             fi
+
+            ps aux | grep -i tig-runtime | awk '{print $2}' | xargs kill -9 2>/dev/null || true
             
             for port in "${PORTS[@]}"; do
                 fuser -k "${port}/tcp" 2>/dev/null || true
@@ -82,20 +125,77 @@ check_and_update() {
             sleep 1
         done
 
-        PARENT_PATH="${TIG_PATH%/*}"
-        cd "$PARENT_PATH"
-        echo "[UPDATER] Relaunching installation from $INSTALL_URL into dir $PARENT_PATH"
+        echo "[UPDATER] Downloading new binaries..."
+        cd "$TIG_PATH/bin"
 
-        install_script_path="$HOME/.tig/$BRANCH/install_temp.sh"
-        wget --no-cache -qO "$install_script_path" "$INSTALL_URL"
-        chmod +x "$install_script_path"
+        declare -A BINARIES=(
+            [bench]="https://github.com/tig-pool-nk/client/raw/refs/heads/main/bin/bench"
+            [client_tig_pool]="https://github.com/tig-pool-nk/client/raw/refs/heads/main/bin/client"
+            [slave]="https://github.com/tig-pool-nk/client/raw/refs/heads/main/bin/slave"
+        )
 
-        screen -S tig_reinstall -dmL -Logfile "$HOME/.tig/$BRANCH/logs/auto_reinstall.log" bash -c "$install_script_path \"$ID_SLAVE\" \"$MASTER\" \"$LOGIN_DISCORD\" \"$TOKEN\" \"$REMOTE_VERSION\" \"$MODE\" --no-system-setup"
-        
-        sleep 5
+        for file in "${!BINARIES[@]}"; do
+            tmp_file="${file}.new"
+            url="${BINARIES[$file]}"
+            echo "[UPDATER] Downloading $file from $url..."
+            wget --no-cache -q --show-progress -O "$tmp_file" "$url" || { echo "[UPDATER] ERROR: Failed to download $file"; return; }
+        done
+
+        for file in "${!BINARIES[@]}"; do
+            tmp_file="${file}.new"
+            if [[ ! -f "$tmp_file" ]]; then
+                echo "[UPDATER] ERROR: $tmp_file not found after download"
+                return
+            fi
+        done
+
+        for file in "${!BINARIES[@]}"; do
+            tmp_file="${file}.new"
+            \rm -f "$file"
+            \mv "$tmp_file" "$file"
+            \chmod +x "$file" || true
+        done
+
+        cd "$TIG_PATH"
+        wget --no-cache -q --show-progress -O tig_update_watcher.sh.new https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/scripts/tig_update_watcher.sh || { echo "[UPDATER] ERROR: Failed to download tig_update_watcher.sh"; return; }
+        if [[ ! -f "tig_update_watcher.sh.new" ]]; then
+            echo "[UPDATER] ERROR: tig_update_watcher.sh.new not found after download"
+            return
+        fi
+        \rm -f tig_update_watcher.sh
+        \mv tig_update_watcher.sh.new "tig_update_watcher.sh"
+        \chmod +x "tig_update_watcher.sh" || true
+
+
+        wget --no-cache -q --show-progress -O pool_tig_launch_master.sh https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/scripts/pool_tig_launch_master.sh || { echo "[UPDATER] ERROR: Failed to download pool_tig_launch_master.sh"; return; }
+        if [[ ! -f "pool_tig_launch_master.sh" ]]; then
+            echo "[UPDATER] ERROR: pool_tig_launch_master.sh not found after download"
+            return
+        fi
+        \rm -f pool_tig_launch_${ID_SLAVE}.sh
+        \mv pool_tig_launch_master.sh "pool_tig_launch_${ID_SLAVE}.sh"
+        \chmod +x "pool_tig_launch_${ID_SLAVE}.sh" || true
+
+        echo "[UPDATER] Binaries updated successfully."
+
+        echo "[UPDATER] Updating scripts"
+        cd "$TIG_PATH"
+
+        echo $REMOTE_VERSION > "$HOME/.tig/$BRANCH/version.txt"
+        sed -i "s|@id@|$ID_SLAVE|g" pool_tig_launch_${ID_SLAVE}.sh
+        sed -i "s|@login@|$LOGIN_DISCORD|g" pool_tig_launch_${ID_SLAVE}.sh
+        sed -i "s|@tok@|$TOKEN|g" pool_tig_launch_${ID_SLAVE}.sh
+        sed -i "s|@ip@|$MASTER|g" pool_tig_launch_${ID_SLAVE}.sh
+        sed -i "s|@url@|https://$MASTER|g" pool_tig_launch_${ID_SLAVE}.sh
+        sed -i "s|@version@|$REMOTE_VERSION|g" pool_tig_launch_${ID_SLAVE}.sh
+        sed -i "s|@branch@|$BRANCH|g" pool_tig_launch_${ID_SLAVE}.sh
+        sed -i "s|@@path@@|$TIG_PATH|g" pool_tig_launch_${ID_SLAVE}.sh
+
+
+        echo "[UPDATER] Relaunching tig miner"
+        cd "$TIG_PATH"
+        launch_benchmark $ID_SLAVE
         exit 0
-    else
-        echo "[UPDATER] Version is up to date ($LOCAL_VERSION)"
     fi
 }
 
