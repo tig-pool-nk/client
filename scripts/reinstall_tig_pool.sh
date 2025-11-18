@@ -3,10 +3,6 @@
 echo "=== TIG Pool Reinstallation Script ==="
 echo ""
 
-echo "Requesting sudo access..."
-sudo -v
-echo ""
-
 echo "Checking GitHub connectivity..."
 http_code=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 5 https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/install.sh)
 if [ "$http_code" = "200" ]; then
