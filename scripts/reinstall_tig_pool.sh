@@ -70,7 +70,7 @@ if [ "$http_code" = "200" ]; then
         echo ""
 
         echo "Removing old tig_pool* folders..."
-        sudo rm -rf tig_pool* 2>&1 | grep -v "cannot remove" || true
+        rm -rf tig_pool* 2>&1 | grep -v "cannot remove" || true
         echo "Folders removed"
         echo ""
 
