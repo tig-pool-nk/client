@@ -335,39 +335,7 @@ configure_launch_script() {
 
 launch_benchmark() {
     echo "🔹 Launching TIG Pool benchmark in screen session..."
-
-    # Load runtime parameters from .tig_env if they exist
-    ENV_FILE="$HOME/.tig/$branch/.tig_env"
-    RUNTIME_PARAMS=""
-
-    if [[ -f "$ENV_FILE" ]]; then
-        source "$ENV_FILE"
-
-        # Build runtime parameters string
-        if [[ -n "${GPU_WORKERS:-}" ]]; then
-            RUNTIME_PARAMS="$RUNTIME_PARAMS --gpu_workers \"$GPU_WORKERS\""
-        fi
-
-        if [[ -n "${CPU_WORKERS:-}" ]]; then
-            RUNTIME_PARAMS="$RUNTIME_PARAMS --cpu_workers \"$CPU_WORKERS\""
-        fi
-
-        if [[ -n "${MAX_SUBBATCHES:-}" && "${MAX_SUBBATCHES}" != "1" ]]; then
-            RUNTIME_PARAMS="$RUNTIME_PARAMS --max_subbatches \"$MAX_SUBBATCHES\""
-        fi
-
-        if [[ "${NO_GPU:-false}" == "true" ]]; then
-            RUNTIME_PARAMS="$RUNTIME_PARAMS --no_gpu"
-        fi
-    fi
-
-    # Launch with runtime parameters if any
-    if [[ -n "$RUNTIME_PARAMS" ]]; then
-        echo "🔹 Launching with runtime parameters: $RUNTIME_PARAMS"
-        screen -dmL -Logfile "$(pwd)/logs/pool_tig.log" -S pool_tig bash -c "cd \"$(pwd)\" && ./pool_tig_launch_${id_slave}.sh $RUNTIME_PARAMS ; exec bash"
-    else
-        screen -dmL -Logfile "$(pwd)/logs/pool_tig.log" -S pool_tig bash -c "cd \"$(pwd)\" && ./pool_tig_launch_${id_slave}.sh ; exec bash"
-    fi
+    screen -dmL -Logfile "$(pwd)/logs/pool_tig.log" -S pool_tig bash -c "cd \"$(pwd)\" && ./pool_tig_launch_${id_slave}.sh ; exec bash"
 }
 
 test_docker_runtime() {
