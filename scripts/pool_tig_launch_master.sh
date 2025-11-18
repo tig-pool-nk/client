@@ -58,6 +58,18 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Save runtime parameters 
+RUNTIME_FILE="$HOME/.tig/$branch/.env.runtime"
+if [[ -f "$RUNTIME_FILE" ]]; then
+    \rm "$RUNTIME_FILE" || true
+fi
+cat > "$RUNTIME_FILE" <<EOF
+GPU_WORKERS=$gpu_workers
+CPU_WORKERS=$cpu_workers
+MAX_SUBBATCHES=$max_subbatches
+NO_GPU=$no_gpu
+EOF
+
 # Kill old processes
 MAX_ATTEMPTS=20
 PORTS=(50800 50801)
