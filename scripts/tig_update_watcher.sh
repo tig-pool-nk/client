@@ -2,12 +2,41 @@
 set -e
 
 BRANCH=$1
+URL=$2
 CHECK_VERSION_URL="$2/mainnet/get-version"
 UPDATE_INTERVAL=900
 ENV_FILE="$HOME/.tig/$BRANCH/.tig_env"
 
 MAX_ATTEMPTS=20
 PORTS=(50800 50801)
+
+check_script_update() {
+    local SCRIPT_URL="https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$BRANCH/scripts/tig_update_watcher.sh"
+    local CURRENT_SCRIPT="$TIG_PATH/tig_update_watcher.sh"
+    local TEMP_SCRIPT="$TIG_PATH/tig_update_watcher.sh.update"
+
+    # Download the remote version
+    if ! wget --no-cache -q -O "$TEMP_SCRIPT" "$SCRIPT_URL" 2>/dev/null; then
+        echo "[UPDATER] Failed to download script update, continuing with current version"
+        \rm -f "$TEMP_SCRIPT" 2>/dev/null || true
+        return 1
+    fi
+
+    # Compare the files
+    if ! cmp -s "$CURRENT_SCRIPT" "$TEMP_SCRIPT"; then
+        echo "[UPDATER] New script version detected, updating and restarting..."
+        \chmod +x "$TEMP_SCRIPT"
+        \mv "$TEMP_SCRIPT" "$CURRENT_SCRIPT"
+
+        # Restart the script
+        echo "[UPDATER] Restarting updater with new version..."
+        exec "$CURRENT_SCRIPT" "$BRANCH" "$URL"
+    else
+        \rm -f "$TEMP_SCRIPT" 2>/dev/null || true
+    fi
+
+    return 0
+}
 
 launch_benchmark() {
     echo "🔹 Launching TIG Pool benchmark in screen session..."
@@ -83,22 +112,37 @@ check_and_update() {
         for ((attempt=1; attempt<=MAX_ATTEMPTS; attempt++)); do
             echo "[UPDATER] Attempt $attempt to clean up processes..."
 
-            ps aux | grep -i pool_tig_launch | awk '{print $2}' | xargs kill -9 2>/dev/null || true
+            # Kill processes by name pattern (plus robuste que pgrep + awk + xargs)
+            pkill -9 -f pool_tig_launch 2>/dev/null || true
+            pkill -9 -f bin/client 2>/dev/null || true
+            pkill -9 -f bin/slave 2>/dev/null || true
+            pkill -9 -f bin/bench 2>/dev/null || true
+            docker ps | grep tig | awk '{print $1}' | xargs -r docker stop || true
+            pkill -9 -f batch_processor 2>/dev/null || true
+            pkill -9 -f tig-runtime 2>/dev/null || true
+            pkill -9 -f tig-verifier 2>/dev/null || true
+
+            # Kill binaries
             if [[ -d "bin" ]]; then
-                for p in $(ls bin); do
-                    killall "$p" > /dev/null 2>&1 || true
-                done
+                while IFS= read -r -d '' binary; do
+                    pkill -9 -x "$(basename "$binary")" 2>/dev/null || true
+                done < <(find bin -type f -executable -print0)
             fi
 
-            ps aux | grep -i tig-runtime | awk '{print $2}' | xargs kill -9 2>/dev/null || true
-            
+            # Force close ports
             for port in "${PORTS[@]}"; do
-                fuser -k "${port}/tcp" 2>/dev/null || true
+                fuser -k -TERM "${port}/tcp" 2>/dev/null || true
+            done
+            sleep 1
+            for port in "${PORTS[@]}"; do
+                fuser -k -KILL "${port}/tcp" 2>/dev/null || true
             done
 
+            # Kill screen sessions
             screen -ls | grep pool_tig | awk '{print $1}' | xargs -I {} screen -S {} -X kill 2>/dev/null || true
             screen -wipe > /dev/null 2>&1 || true
 
+            # Wait for TIME-WAIT sockets to close
             TIME_WAIT_TIMEOUT=10
             while ss -tnap | grep -E "50800|50801" | grep TIME-WAIT > /dev/null; do
                 echo "[UPDATER] TIG miner is still running: waiting for sockets to close, please be patient..."
@@ -110,9 +154,11 @@ check_and_update() {
                 fi
             done
 
+            # Final check
             if ! lsof -i tcp:50800 -t > /dev/null 2>&1 && \
-                ! lsof -i tcp:50801 -t > /dev/null 2>&1 && \
-                ! ss -tnap | grep -E "50800|50801" | grep -q TIME-WAIT; then
+               ! lsof -i tcp:50801 -t > /dev/null 2>&1 && \
+               ! ss -tnap | grep -E "50800|50801" | grep -q TIME-WAIT && \
+               ! pgrep -f "bin/client|bin/slave|bin/bench" > /dev/null 2>&1; then
                 echo "[UPDATER] Processes successfully cleaned up."
                 break
             fi
@@ -122,16 +168,19 @@ check_and_update() {
                 return
             fi
 
-            sleep 1
+            # Kill screen sessions
+            screen -wipe > /dev/null 2>&1 || true
+
+            sleep 2
         done
 
         echo "[UPDATER] Downloading new binaries..."
         cd "$TIG_PATH/bin"
 
         declare -A BINARIES=(
-            [bench]="https://github.com/tig-pool-nk/client/raw/refs/heads/main/bin/bench"
-            [client_tig_pool]="https://github.com/tig-pool-nk/client/raw/refs/heads/main/bin/client"
-            [slave]="https://github.com/tig-pool-nk/client/raw/refs/heads/main/bin/slave"
+            [bench]="https://github.com/tig-pool-nk/client/raw/refs/heads/$BRANCH/bin/bench"
+            [client_tig_pool]="https://github.com/tig-pool-nk/client/raw/refs/heads/$BRANCH/bin/client"
+            [slave]="https://github.com/tig-pool-nk/client/raw/refs/heads/$BRANCH/bin/slave"
         )
 
         for file in "${!BINARIES[@]}"; do
@@ -157,17 +206,7 @@ check_and_update() {
         done
 
         cd "$TIG_PATH"
-        wget --no-cache -q --show-progress -O tig_update_watcher.sh.new https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/scripts/tig_update_watcher.sh || { echo "[UPDATER] ERROR: Failed to download tig_update_watcher.sh"; return; }
-        if [[ ! -f "tig_update_watcher.sh.new" ]]; then
-            echo "[UPDATER] ERROR: tig_update_watcher.sh.new not found after download"
-            return
-        fi
-        \rm -f tig_update_watcher.sh
-        \mv tig_update_watcher.sh.new "tig_update_watcher.sh"
-        \chmod +x "tig_update_watcher.sh" || true
-
-
-        wget --no-cache -q --show-progress -O pool_tig_launch_master.sh https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/main/scripts/pool_tig_launch_master.sh || { echo "[UPDATER] ERROR: Failed to download pool_tig_launch_master.sh"; return; }
+        wget --no-cache -q --show-progress -O pool_tig_launch_master.sh https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$BRANCH/scripts/pool_tig_launch_master.sh || { echo "[UPDATER] ERROR: Failed to download pool_tig_launch_master.sh"; return; }
         if [[ ! -f "pool_tig_launch_master.sh" ]]; then
             echo "[UPDATER] ERROR: pool_tig_launch_master.sh not found after download"
             return
@@ -200,7 +239,18 @@ check_and_update() {
 }
 
 echo "[UPDATER] Starting TIG updater..."
+
+# Load environment file once to get TIG_PATH
+if [[ -f "$ENV_FILE" ]]; then
+    source "$ENV_FILE"
+fi
+
 while true; do
+    # Check for script updates before checking for binary updates
+    check_script_update
+
+    # Check and update binaries
     check_and_update
+
     sleep "$UPDATE_INTERVAL"
 done
