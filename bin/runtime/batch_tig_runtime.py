@@ -271,7 +271,6 @@ def main():
     parser = argparse.ArgumentParser(description="TIG_pool_custom", add_help=False)
 
     # Required arguments
-    parser.add_argument("--batch-id", type=str, required=True, help=argparse.SUPPRESS)
     parser.add_argument(
         "--start-nonce", type=int, required=True, help=argparse.SUPPRESS
     )
