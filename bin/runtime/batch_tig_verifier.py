@@ -25,9 +25,10 @@ def verify_nonce(
 ) -> bool:
     output_file = f"{output_dir}/{nonce}.json"
     if not os.path.exists(output_file):
+        warn_msg = f"missing file for nonce {nonce}"
         if verbose:
-            logger.warning(f"missing file for nonce {nonce}")
-        return False
+            logger.warning(warn_msg)
+        return (nonce, warn_msg)
 
     try:
         verify_cmd = [
@@ -70,12 +71,13 @@ def verify_nonce(
         with open(output_file, "w") as f:
             json.dump(d, f)
 
-        return True
+        return (nonce, None)
 
     except Exception as e:
-        msg = f"nonce {nonce}, runtime error: {e}"
+        error_msg = str(e)
+        msg = f"nonce {nonce}, runtime error: {error_msg}"
         print(msg, file=sys.stderr)
-        return False
+        return (nonce, error_msg)
 
 
 def verify_batch(
@@ -98,6 +100,7 @@ def verify_batch(
             return 0
 
     success_count = 0
+    errors = {}
     futures = []
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -118,10 +121,17 @@ def verify_batch(
 
         for future in as_completed(futures, timeout=600):
             try:
-                if future.result():
+                nonce, error_msg = future.result()
+                if error_msg is None:
                     success_count += 1
+                else:
+                    errors[nonce] = error_msg
             except Exception as e:
                 logger.error(f"future raised exception: {e}")
+
+    if errors:
+        with open(f"{output_dir}/verifier_errors.json", "w") as f:
+            json.dump({"errors": errors}, f)
 
     logger.info(f"completed {success_count}/{num_nonces} nonces successfully")
     return success_count == num_nonces
