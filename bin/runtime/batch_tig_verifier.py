@@ -31,7 +31,7 @@ def verify_nonce(
 
     try:
         verify_cmd = [
-            "tig-pool-verifier",
+            "tig-verifier",
             settings_json,
             rand_hash,
             str(nonce),
