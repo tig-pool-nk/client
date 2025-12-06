@@ -43,7 +43,7 @@ def verify_nonce(
         if ptx_path:
             verify_cmd += ["--ptx", ptx_path]
         if gpu_id is not None:
-            verify_cmd += ["--gpu", gpu_id]
+            verify_cmd += ["--gpu", str(gpu_id)]
 
         verify_result = subprocess.run(
             verify_cmd,
