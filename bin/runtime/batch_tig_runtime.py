@@ -5,7 +5,7 @@ import os
 import subprocess
 import sys
 import time
-from concurrent.futures import FIRST_EXCEPTION, ThreadPoolExecutor, wait
+from concurrent.futures import ALL_COMPLETED, FIRST_EXCEPTION, ThreadPoolExecutor, wait
 from typing import Optional
 
 logging.basicConfig(
@@ -27,12 +27,13 @@ def process_single_nonce(
     hyperparameters: Optional[str] = None,
     timeout: int = 0,
     verbose: bool = False,
-) -> bool:
+    stop_on_error: bool = True,
+) -> tuple[int, Optional[str]]:
     output_file = f"{output_dir}/{nonce}.json"
     if os.path.exists(output_file):
         if verbose:
             logger.debug(f"nonce {nonce}: already computed")
-        return True
+        return (nonce, None)
 
     try:
         runtime_cmd = [
@@ -78,14 +79,17 @@ def process_single_nonce(
                     f"failed with exit code {runtime_result.returncode}: {runtime_result.stderr.strip()}"
                 )
 
-        return True
+        return (nonce, None)
 
     except Exception as e:
-        msg = f"nonce {nonce}, runtime error: {e}"
-        logger.error(msg)
-        with open(f"{output_dir}/result.json", "w") as f:
-            json.dump({"error": msg}, f)
-        raise
+        error_msg = str(e)
+        error_log = f"nonce {nonce}: {error_msg}"
+        print(error_log, file=sys.stderr)
+        if stop_on_error:
+            with open(f"{output_dir}/result.json", "w") as f:
+                json.dump({"error": error_log}, f)
+            raise
+        return (nonce, error_msg)
 
 
 def process_runtime_batch(
@@ -103,6 +107,7 @@ def process_runtime_batch(
     hyperparameters: Optional[str] = None,
     timeout: int = 0,
     verbose: bool = False,
+    stop_on_error: bool = True,
 ) -> int:
     try:
         os.makedirs(output_dir, exist_ok=True)
@@ -112,6 +117,7 @@ def process_runtime_batch(
             return 0
 
     success_count = 0
+    errors = {}
     futures = []
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -131,34 +137,43 @@ def process_runtime_batch(
                 hyperparameters,
                 timeout,
                 verbose,
+                stop_on_error,
             )
             futures.append(future)
 
         done, not_done = wait(
             futures,
             timeout=timeout if timeout > 0 else None,
-            return_when=FIRST_EXCEPTION,
+            return_when=FIRST_EXCEPTION if stop_on_error else ALL_COMPLETED,
         )
 
         exception_raised = False
-        for future in done:
-            if future.exception() is not None:
-                logger.error("critical exception detected, stopping pool")
-                exception_raised = True
-                break
+        if stop_on_error:
+            for future in done:
+                if future.exception() is not None:
+                    logger.error("critical exception detected, stopping pool")
+                    exception_raised = True
+                    break
 
-        if exception_raised or not_done:
-            if not_done:
-                logger.warning(f"{len(not_done)} tasks cancelled")
-            executor.shutdown(wait=False, cancel_futures=True)
+            if exception_raised or not_done:
+                if not_done:
+                    logger.warning(f"{len(not_done)} tasks cancelled")
+                executor.shutdown(wait=False, cancel_futures=True)
 
         for future in futures:
             if future.done() and future.exception() is None:
                 try:
-                    if future.result():
+                    nonce, error_msg = future.result()
+                    if error_msg is None:
                         success_count += 1
+                    else:
+                        errors[nonce] = error_msg
                 except Exception as e:
                     logger.error(f"future raised exception: {e}")
+
+    if errors:
+        with open(f"{output_dir}/result.json", "w") as f:
+            json.dump({"errors": errors}, f)
 
     logger.info(f"Completed {success_count}/{num_nonces} nonces successfully")
     return success_count
@@ -308,6 +323,7 @@ def main():
             args.hyperparameters,
             args.timeout,
             args.verbose,
+            stop_on_error=(args.mode == "runtime"),
         )
         if success_count == args.num_nonces:
             sys.exit(0)

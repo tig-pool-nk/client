@@ -74,7 +74,7 @@ def verify_nonce(
 
     except Exception as e:
         msg = f"nonce {nonce}, runtime error: {e}"
-        logger.error(msg)
+        print(msg, file=sys.stderr)
         return False
 
 
@@ -124,7 +124,7 @@ def verify_batch(
                 logger.error(f"future raised exception: {e}")
 
     logger.info(f"completed {success_count}/{num_nonces} nonces successfully")
-    return success_count
+    return success_count == num_nonces
 
 
 def main():
@@ -153,7 +153,7 @@ def main():
     if args.verbose:
         logger.setLevel(logging.DEBUG)
 
-    success_count = verify_batch(
+    success = verify_batch(
         args.start_nonce,
         args.num_nonces,
         args.max_workers,
@@ -166,7 +166,7 @@ def main():
         args.verbose,
     )
 
-    if success_count == args.num_nonces:
+    if success:
         sys.exit(0)
     else:
         sys.exit(1)
