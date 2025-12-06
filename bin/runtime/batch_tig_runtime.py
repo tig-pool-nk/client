@@ -15,7 +15,6 @@ logger = logging.getLogger(__name__)
 
 
 def process_single_nonce(
-    batch_id: str,
     nonce: int,
     settings_json: str,
     rand_hash: str,
@@ -90,7 +89,6 @@ def process_single_nonce(
 
 
 def process_runtime_batch(
-    batch_id: str,
     start_nonce: int,
     num_nonces: int,
     max_workers: int,
@@ -121,7 +119,6 @@ def process_runtime_batch(
             nonce = start_nonce + i
             future = executor.submit(
                 process_single_nonce,
-                batch_id,
                 nonce,
                 settings_json,
                 rand_hash,
@@ -168,7 +165,6 @@ def process_runtime_batch(
 
 
 def process_explo_batch(
-    batch_id: str,
     start_nonce: int,
     max_workers: int,
     settings_json: str,
@@ -204,7 +200,6 @@ def process_explo_batch(
         for _ in range(max_workers):
             future = executor.submit(
                 process_single_nonce,
-                batch_id,
                 current_nonce,
                 settings_json,
                 rand_hash,
@@ -242,7 +237,6 @@ def process_explo_batch(
                 if time.time() - start_time < timeout:
                     new_future = executor.submit(
                         process_single_nonce,
-                        batch_id,
                         current_nonce,
                         settings_json,
                         rand_hash,
@@ -300,7 +294,6 @@ def main():
 
     if args.mode != "explo":
         success_count = process_runtime_batch(
-            args.batch_id,
             args.start_nonce,
             args.num_nonces,
             args.max_workers,
@@ -322,7 +315,6 @@ def main():
             sys.exit(1)
     else:
         success_count = process_explo_batch(
-            args.batch_id,
             args.start_nonce,
             args.max_workers,
             args.settings,
