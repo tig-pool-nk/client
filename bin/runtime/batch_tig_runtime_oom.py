@@ -361,9 +361,9 @@ def process_explo_batch(
 
             if futures_map:
                 logger.info(
-                    f"Timeout reached, cancelling {len(futures_map)} remaining tasks"
+                    f"Timeout reached, waiting for {len(futures_map)} remaining tasks to finish"
                 )
-                executor.shutdown(wait=False, cancel_futures=True)
+                executor.shutdown(wait=True, cancel_futures=False)
 
     finally:
         watchdog.stop()
