@@ -1,10 +1,11 @@
-import asyncio
 import logging
+import subprocess
 import threading
 import time
 from abc import ABC, abstractmethod
+from concurrent.futures import Future
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional, Set, Union
+from typing import Dict, Optional, Set
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +33,8 @@ except ImportError:
 @dataclass
 class NonceTask:
     nonce: int
-    task: Optional[asyncio.Task] = None
-    process: Optional[asyncio.subprocess.Process] = None
+    future: Future
+    process: Optional[subprocess.Popen] = None
     start_time: float = field(default_factory=time.time)
     priority: int = 0
 
@@ -79,20 +80,20 @@ class BaseWatchdog(ABC):
     def register_task(
         self,
         nonce: int,
-        task: Optional[asyncio.Task] = None,
-        process: Optional[asyncio.subprocess.Process] = None,
+        future: Future,
+        process: Optional[subprocess.Popen] = None,
         priority: int = 0,
     ):
         with self.lock:
             self.active_tasks[nonce] = NonceTask(
-                nonce=nonce, task=task, process=process, priority=priority
+                nonce=nonce, future=future, process=process, priority=priority
             )
 
     def unregister_task(self, nonce: int):
         with self.lock:
             self.active_tasks.pop(nonce, None)
 
-    def set_process(self, nonce: int, process: asyncio.subprocess.Process):
+    def set_process(self, nonce: int, process: subprocess.Popen):
         with self.lock:
             if nonce in self.active_tasks:
                 self.active_tasks[nonce].process = process
@@ -104,7 +105,9 @@ class BaseWatchdog(ABC):
     def get_victim(self) -> Optional[NonceTask]:
         with self.lock:
             running = [
-                t for t in self.active_tasks.values() if t.task and not t.task.done()
+                t
+                for t in self.active_tasks.values()
+                if not t.future.done() and not t.future.cancelled()
             ]
             return max(running, key=lambda t: t.oom_score) if running else None
 
@@ -116,10 +119,13 @@ class BaseWatchdog(ABC):
         logger.warning(
             f"[{self.memory_type} OOM] Killing nonce {victim.nonce} (age={victim.age:.1f}s, {used}/{total}MB {pct * 100:.1f}%)"
         )
-        if victim.process and victim.process.returncode is None:
+        if victim.process and victim.process.poll() is None:
             victim.process.terminate()
-        if victim.task and not victim.task.done():
-            victim.task.cancel()
+            try:
+                victim.process.wait(timeout=0.5)
+            except subprocess.TimeoutExpired:
+                victim.process.kill()
+        victim.future.cancel()
         with self.lock:
             self.active_tasks.pop(victim.nonce, None)
             self.killed_nonces.add(victim.nonce)
@@ -259,8 +265,8 @@ class DummyWatchdog(BaseWatchdog):
     def register_task(
         self,
         nonce: int,
-        task: Optional[asyncio.Task] = None,
-        process: Optional[asyncio.subprocess.Process] = None,
+        future: Future,
+        process: Optional[subprocess.Popen] = None,
         priority: int = 0,
     ):
         pass
@@ -268,7 +274,7 @@ class DummyWatchdog(BaseWatchdog):
     def unregister_task(self, nonce: int):
         pass
 
-    def set_process(self, nonce: int, process: asyncio.subprocess.Process):
+    def set_process(self, nonce: int, process: subprocess.Popen):
         pass
 
     def queue_for_retry(self, nonce: int):
