@@ -212,7 +212,7 @@ def main():
     parser.add_argument("--verbose", action="store_true")
     parser.add_argument("--mem-high", type=float, default=90.0)
     parser.add_argument("--mem-low", type=float, default=75.0)
-    parser.add_argument("--mem-interval", type=int, default=50)
+    parser.add_argument("--mem-interval", type=int, default=10)
     parser.add_argument("--no-oom", action="store_true")
 
     args = parser.parse_args()
