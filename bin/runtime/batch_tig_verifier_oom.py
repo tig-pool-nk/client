@@ -1,14 +1,12 @@
 import argparse
+import asyncio
 import json
 import logging
 import os
-import subprocess
 import sys
-import time
-from concurrent.futures import ThreadPoolExecutor, Future, wait, ALL_COMPLETED
 from typing import Dict, Optional, Set
 
-from watchdog_oom import create_watchdog, BaseWatchdog
+from watchdog_oom import BaseWatchdog, create_watchdog
 
 logging.basicConfig(
     level=logging.INFO, format="[batch_verifier] %(message)s", stream=sys.stdout
@@ -16,7 +14,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def verify_nonce(
+async def verify_nonce(
     nonce: int,
     settings_json: str,
     rand_hash: str,
@@ -46,17 +44,20 @@ def verify_nonce(
         if gpu_id is not None:
             verify_cmd += ["--gpu", str(gpu_id)]
 
-        process = subprocess.Popen(
-            verify_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        process = await asyncio.create_subprocess_exec(
+            *verify_cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
         )
+
         if watchdog:
             watchdog.set_process(nonce, process)
 
         try:
-            stdout, stderr = process.communicate(timeout=60)
-        except subprocess.TimeoutExpired:
+            stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=60)
+        except asyncio.TimeoutError:
             process.kill()
-            process.communicate()
+            await process.communicate()
             raise
 
         if process.returncode in (-15, -9):
@@ -86,12 +87,14 @@ def verify_nonce(
 
         return (nonce, None)
 
+    except asyncio.CancelledError:
+        return (nonce, "killed_by_oom")
     except Exception as e:
         print(f"nonce {nonce}: {e}", file=sys.stderr)
         return (nonce, str(e))
 
 
-def verify_batch(
+async def verify_batch(
     start_nonce: int,
     num_nonces: int,
     max_workers: int,
@@ -121,71 +124,76 @@ def verify_batch(
     errors = {}
     pending_nonces = set(range(start_nonce, start_nonce + num_nonces))
     completed_nonces: Set[int] = set()
-    futures_map: Dict[Future, int] = {}
+    active_tasks: Dict[asyncio.Task, int] = {}
+    semaphore = asyncio.Semaphore(max_workers)
+
+    async def run_with_semaphore(nonce: int) -> tuple[int, Optional[str]]:
+        async with semaphore:
+            return await verify_nonce(
+                nonce,
+                settings_json,
+                rand_hash,
+                output_dir,
+                ptx_path,
+                gpu_id,
+                data_encrypted,
+                verbose,
+                watchdog,
+            )
 
     try:
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            while (
-                pending_nonces
-                or futures_map
-                or watchdog.get_pending_restart_count() > 0
-            ):
-                for nonce in watchdog.get_nonces_to_restart():
-                    if nonce not in completed_nonces:
-                        pending_nonces.add(nonce)
+        while (
+            pending_nonces or active_tasks or watchdog.get_pending_restart_count() > 0
+        ):
+            for nonce in watchdog.get_nonces_to_restart():
+                if nonce not in completed_nonces:
+                    pending_nonces.add(nonce)
 
-                while pending_nonces and len(futures_map) < max_workers:
-                    nonce = pending_nonces.pop()
-                    future = executor.submit(
-                        verify_nonce,
-                        nonce,
-                        settings_json,
-                        rand_hash,
-                        output_dir,
-                        ptx_path,
-                        gpu_id,
-                        data_encrypted,
-                        verbose,
-                        watchdog,
-                    )
-                    futures_map[future] = nonce
-                    watchdog.register_task(nonce, future)
+            while pending_nonces and len(active_tasks) < max_workers:
+                nonce = pending_nonces.pop()
+                task = asyncio.create_task(run_with_semaphore(nonce))
+                active_tasks[task] = nonce
+                watchdog.register_task(nonce, task)
 
-                if not futures_map:
-                    if watchdog.get_pending_restart_count() > 0:
-                        time.sleep(mem_interval * 2)
-                        continue
-                    break
+            if not active_tasks:
+                if watchdog.get_pending_restart_count() > 0:
+                    await asyncio.sleep(mem_interval * 2)
+                    continue
+                break
 
-                wait_timeout = max(mem_interval * 5, 0.05)
-                done, _ = wait(
-                    futures_map.keys(), timeout=wait_timeout, return_when=ALL_COMPLETED
-                )
+            done, _ = await asyncio.wait(
+                active_tasks.keys(),
+                timeout=mem_interval * 5,
+                return_when=asyncio.FIRST_COMPLETED,
+            )
 
-                for future in done:
-                    nonce = futures_map.pop(future)
-                    watchdog.unregister_task(nonce)
-                    if future.cancelled():
-                        continue
-                    try:
-                        result_nonce, error_msg = future.result()
-                        if error_msg is None:
-                            success_count += 1
-                            completed_nonces.add(result_nonce)
-                        elif error_msg in ("killed_by_oom", "cuda_oom"):
-                            watchdog.queue_for_retry(result_nonce)
-                        else:
-                            errors[result_nonce] = error_msg
-                            completed_nonces.add(result_nonce)
-                    except Exception as e:
-                        errors[nonce] = str(e)
-                        completed_nonces.add(nonce)
+            for task in done:
+                nonce = active_tasks.pop(task)
+                watchdog.unregister_task(nonce)
+                if task.cancelled():
+                    continue
+                try:
+                    result_nonce, error_msg = task.result()
+                    if error_msg is None:
+                        success_count += 1
+                        completed_nonces.add(result_nonce)
+                    elif error_msg in ("killed_by_oom", "cuda_oom"):
+                        watchdog.queue_for_retry(result_nonce)
+                    else:
+                        errors[result_nonce] = error_msg
+                        completed_nonces.add(result_nonce)
+                except asyncio.CancelledError:
+                    watchdog.queue_for_retry(nonce)
+                except Exception as e:
+                    errors[nonce] = str(e)
+                    completed_nonces.add(nonce)
 
     finally:
-        if futures_map:
-            logger.info(f"Cancelling {len(futures_map)} remaining tasks")
-            for future in futures_map:
-                future.cancel()
+        if active_tasks:
+            logger.info(f"Cancelling {len(active_tasks)} remaining tasks")
+            for task in active_tasks:
+                task.cancel()
+            await asyncio.gather(*active_tasks.keys(), return_exceptions=True)
         watchdog.stop()
 
     if errors:
@@ -212,7 +220,7 @@ def main():
     parser.add_argument("--verbose", action="store_true")
     parser.add_argument("--mem-high", type=float, default=90.0)
     parser.add_argument("--mem-low", type=float, default=75.0)
-    parser.add_argument("--mem-interval", type=int, default=10)
+    parser.add_argument("--mem-interval", type=int, default=50)
     parser.add_argument("--no-oom", action="store_true")
 
     args = parser.parse_args()
@@ -228,21 +236,23 @@ def main():
         logger.error("mem-low must be less than mem-high")
         sys.exit(1)
 
-    success = verify_batch(
-        args.start_nonce,
-        args.num_nonces,
-        args.max_workers,
-        args.settings,
-        args.rand_hash,
-        args.output_dir,
-        args.data,
-        args.ptx,
-        args.gpu_id,
-        args.verbose,
-        mem_high,
-        mem_low,
-        mem_interval,
-        args.no_oom,
+    success = asyncio.run(
+        verify_batch(
+            args.start_nonce,
+            args.num_nonces,
+            args.max_workers,
+            args.settings,
+            args.rand_hash,
+            args.output_dir,
+            args.data,
+            args.ptx,
+            args.gpu_id,
+            args.verbose,
+            mem_high,
+            mem_low,
+            mem_interval,
+            args.no_oom,
+        )
     )
 
     sys.exit(0 if success else 1)
