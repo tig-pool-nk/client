@@ -386,7 +386,7 @@ def main():
     parser.add_argument("--so-path", required=True)
     parser.add_argument("--max-fuel", type=int, required=True)
     parser.add_argument("--output-dir", required=True)
-    parser.add_argument("--mode", required=True, choices=["runtime", "bench", "explo"])
+    parser.add_argument("--mode", required=True, choices=["runtime", "bench", "explo", "explo_time"])
     parser.add_argument("--ptx", default=None)
     parser.add_argument("--gpu-id", type=int, default=None)
     parser.add_argument("--data", default=None)
