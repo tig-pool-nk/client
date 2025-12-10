@@ -121,7 +121,12 @@ mkdir "tig_pool_$branch"
 cd "tig_pool_$branch" || exit 1
 
 # Save parameters
-install_url="https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/install.sh"
+if [[ "$branch" == "test" ]]; then
+    base_url="https://download-test.tigpool.com"
+else
+    base_url="https://download.tigpool.com"
+fi
+install_url="$base_url/install.sh"
 cat > "$HOME/.tig/$branch/.tig_env" <<EOF
 TIG_PATH=$PWD
 ID_SLAVE=$slave_id
@@ -188,7 +193,7 @@ for ((attempt=1; attempt<=MAX_ATTEMPTS; attempt++)); do
 done
 
 # Télécharger et exécuter le script mis à jour
-script_url="https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/scripts/tig_pool_master.sh"
+script_url="$base_url/scripts/tig_pool_master.sh"
 echo "Downloading script from: $script_url"
 if ! command -v wget > /dev/null; then
     echo "wget is not installed. Please install it first."

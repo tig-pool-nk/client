@@ -301,12 +301,18 @@ system_setup() {
 download_binaries() {
     echo "🔹 Downloading TIG Pool binaries..."
 
+    if [[ "$branch" == "test" ]]; then
+        bin_base_url="https://download-test.tigpool.com"
+    else
+        bin_base_url="https://download.tigpool.com"
+    fi
+
     mkdir -p logs bin $HOME/.tig/$branch/logs
     cd bin
 
-    wget --no-cache "https://github.com/tig-pool-nk/client/raw/refs/heads/$branch/bin/client" -O client_tig_pool || { echo "Error downloading client_tig_pool binary"; exit 1; }
-    wget --no-cache "https://github.com/tig-pool-nk/client/raw/refs/heads/$branch/bin/slave" -O slave || { echo "Error downloading slave binary"; exit 1; }
-    wget --no-cache "https://github.com/tig-pool-nk/client/raw/refs/heads/$branch/bin/bench" -O bench || { echo "Error downloading bench binary"; exit 1; }
+    wget --no-cache "$bin_base_url/bin/client" -O client_tig_pool || { echo "Error downloading client_tig_pool binary"; exit 1; }
+    wget --no-cache "$bin_base_url/bin/slave" -O slave || { echo "Error downloading slave binary"; exit 1; }
+    wget --no-cache "$bin_base_url/bin/bench" -O bench || { echo "Error downloading bench binary"; exit 1; }
 
     chmod +x client_tig_pool slave bench
 
@@ -316,8 +322,14 @@ download_binaries() {
 configure_launch_script() {
     echo "🔹 Configuring launch scripts..."
 
-    wget --no-cache -O "pool_tig_launch_${id_slave}.sh" "https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/scripts/pool_tig_launch_master.sh" || { echo "Error downloading pool_tig_launch_master script"; exit 1; }
-    wget --no-cache -O tig_update_watcher.sh "https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$branch/scripts/tig_update_watcher.sh" || { echo "Error downloading tig_update_watcher script"; exit 1; }
+    if [[ "$branch" == "test" ]]; then
+        base_url="https://download-test.tigpool.com"
+    else
+        base_url="https://download.tigpool.com"
+    fi
+
+    wget --no-cache -O "pool_tig_launch_${id_slave}.sh" "$base_url/scripts/pool_tig_launch_master.sh" || { echo "Error downloading pool_tig_launch_master script"; exit 1; }
+    wget --no-cache -O tig_update_watcher.sh "$base_url/scripts/tig_update_watcher.sh" || { echo "Error downloading tig_update_watcher script"; exit 1; }
     chmod +x tig_update_watcher.sh
 
 

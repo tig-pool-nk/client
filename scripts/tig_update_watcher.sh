@@ -11,7 +11,12 @@ MAX_ATTEMPTS=20
 PORTS=(50800 50801)
 
 check_script_update() {
-    local SCRIPT_URL="https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$BRANCH/scripts/tig_update_watcher.sh"
+    if [[ "$BRANCH" == "test" ]]; then
+        local BASE_URL="https://download-test.tigpool.com"
+    else
+        local BASE_URL="https://download.tigpool.com"
+    fi
+    local SCRIPT_URL="$BASE_URL/scripts/tig_update_watcher.sh"
     local CURRENT_SCRIPT="$TIG_PATH/tig_update_watcher.sh"
     local TEMP_SCRIPT="$TIG_PATH/tig_update_watcher.sh.update"
 
@@ -177,10 +182,16 @@ check_and_update() {
         echo "[UPDATER] Downloading new binaries..."
         cd "$TIG_PATH/bin"
 
+        if [[ "$BRANCH" == "test" ]]; then
+            BIN_BASE_URL="https://download-test.tigpool.com"
+        else
+            BIN_BASE_URL="https://download.tigpool.com"
+        fi
+
         declare -A BINARIES=(
-            [bench]="https://github.com/tig-pool-nk/client/raw/refs/heads/$BRANCH/bin/bench"
-            [client_tig_pool]="https://github.com/tig-pool-nk/client/raw/refs/heads/$BRANCH/bin/client"
-            [slave]="https://github.com/tig-pool-nk/client/raw/refs/heads/$BRANCH/bin/slave"
+            [bench]="$BIN_BASE_URL/bin/bench"
+            [client_tig_pool]="$BIN_BASE_URL/bin/client"
+            [slave]="$BIN_BASE_URL/bin/slave"
         )
 
         for file in "${!BINARIES[@]}"; do
@@ -206,7 +217,12 @@ check_and_update() {
         done
 
         cd "$TIG_PATH"
-        wget --no-cache -q --show-progress -O pool_tig_launch_master.sh https://raw.githubusercontent.com/tig-pool-nk/client/refs/heads/$BRANCH/scripts/pool_tig_launch_master.sh || { echo "[UPDATER] ERROR: Failed to download pool_tig_launch_master.sh"; return; }
+        if [[ "$BRANCH" == "test" ]]; then
+            DOWNLOAD_BASE_URL="https://download-test.tigpool.com"
+        else
+            DOWNLOAD_BASE_URL="https://download.tigpool.com"
+        fi
+        wget --no-cache -q --show-progress -O pool_tig_launch_master.sh "$DOWNLOAD_BASE_URL/scripts/pool_tig_launch_master.sh" || { echo "[UPDATER] ERROR: Failed to download pool_tig_launch_master.sh"; return; }
         if [[ ! -f "pool_tig_launch_master.sh" ]]; then
             echo "[UPDATER] ERROR: pool_tig_launch_master.sh not found after download"
             return
