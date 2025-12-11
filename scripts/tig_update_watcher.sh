@@ -1,6 +1,42 @@
 #!/bin/bash
 set -e
 
+download_and_verify_md5() {
+    local url="$1"
+    local output_file="${2:-$(basename "$url")}"
+    local md5_url="${url}.md5"
+    local md5_file="${output_file}.md5"
+
+    echo "[UPDATER] Downloading $output_file..."
+    if ! wget --no-cache -q -O "$output_file" "$url"; then
+        echo "[UPDATER] ERROR: Failed to download $url"
+        return 1
+    fi
+
+    echo "[UPDATER] Downloading MD5 checksum..."
+    if ! wget --no-cache -q -O "$md5_file" "$md5_url"; then
+        echo "[UPDATER] ERROR: Failed to download MD5 checksum from $md5_url"
+        rm -f "$output_file"
+        return 1
+    fi
+
+    echo "[UPDATER] Verifying MD5 checksum..."
+    local expected_md5=$(awk '{print $1}' "$md5_file")
+    local actual_md5=$(md5sum "$output_file" | awk '{print $1}')
+
+    if [ "$expected_md5" != "$actual_md5" ]; then
+        echo "[UPDATER] ERROR: MD5 checksum verification failed for $output_file"
+        echo "[UPDATER]    Expected: $expected_md5"
+        echo "[UPDATER]    Actual:   $actual_md5"
+        rm -f "$output_file" "$md5_file"
+        return 1
+    fi
+
+    echo "[UPDATER] MD5 checksum verified for $output_file"
+    rm -f "$md5_file"
+    return 0
+}
+
 BRANCH=$1
 URL=$2
 CHECK_VERSION_URL="$2/mainnet/get-version"
@@ -197,8 +233,10 @@ check_and_update() {
         for file in "${!BINARIES[@]}"; do
             tmp_file="${file}.new"
             url="${BINARIES[$file]}"
-            echo "[UPDATER] Downloading $file from $url..."
-            wget --no-cache -q --show-progress -O "$tmp_file" "$url" || { echo "[UPDATER] ERROR: Failed to download $file"; return; }
+            if ! download_and_verify_md5 "$url" "$tmp_file"; then
+                echo "[UPDATER] ERROR: Failed to download or verify $file"
+                return
+            fi
         done
 
         for file in "${!BINARIES[@]}"; do

@@ -1,6 +1,41 @@
 #!/bin/bash
 set -euo pipefail
 
+download_and_verify_md5() {
+    local url="$1"
+    local output_file="${2:-$(basename "$url")}"
+    local md5_url="${url}.md5"
+    local md5_file="${output_file}.md5"
+
+    echo "Downloading $output_file..."
+    if ! wget --no-cache -q -O "$output_file" "$url"; then
+        echo "ERROR: Failed to download $url"
+        exit 1
+    fi
+
+    echo "Downloading MD5 checksum..."
+    if ! wget --no-cache -q -O "$md5_file" "$md5_url"; then
+        echo "ERROR: Failed to download MD5 checksum from $md5_url"
+        rm -f "$output_file"
+        exit 1
+    fi
+
+    echo "Verifying MD5 checksum..."
+    expected_md5=$(awk '{print $1}' "$md5_file")
+    actual_md5=$(md5sum "$output_file" | awk '{print $1}')
+
+    if [ "$expected_md5" != "$actual_md5" ]; then
+        echo "ERROR: MD5 checksum verification failed for $output_file"
+        echo "   Expected: $expected_md5"
+        echo "   Actual:   $actual_md5"
+        rm -f "$output_file" "$md5_file"
+        exit 1
+    fi
+
+    echo "MD5 checksum verified for $output_file"
+    rm -f "$md5_file"
+}
+
 HAS_GPU=0
 
 usage() {
@@ -310,9 +345,9 @@ download_binaries() {
     mkdir -p logs bin $HOME/.tig/$branch/logs
     cd bin
 
-    wget --no-cache "$bin_base_url/bin/client" -O client_tig_pool || { echo "Error downloading client_tig_pool binary"; exit 1; }
-    wget --no-cache "$bin_base_url/bin/slave" -O slave || { echo "Error downloading slave binary"; exit 1; }
-    wget --no-cache "$bin_base_url/bin/bench" -O bench || { echo "Error downloading bench binary"; exit 1; }
+    download_and_verify_md5 "$bin_base_url/bin/client" "client_tig_pool"
+    download_and_verify_md5 "$bin_base_url/bin/slave" "slave"
+    download_and_verify_md5 "$bin_base_url/bin/bench" "bench"
 
     chmod +x client_tig_pool slave bench
 
